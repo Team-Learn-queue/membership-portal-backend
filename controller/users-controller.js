@@ -1,8 +1,12 @@
 const { validationResult } = require("express-validator");
 const User = require("../models/users");
+const Token = require("../models/token");
+
+const crypto = require("crypto");
 const bcrypt = require("bcryptjs");
 const nodemailer = require("nodemailer");
 const dotenv = require("dotenv");
+const token = require("../models/token");
 
 dotenv.config();
 
@@ -40,7 +44,7 @@ const signup = async (req, res) => {
   } catch (err) {
     return res
       .status(422)
-      .json({ message: "Couldn't create User, Please Try Agai" });
+      .json({ message: "Couldn't create User, Please Try Again" });
   }
 
   const user = User({
@@ -53,54 +57,59 @@ const signup = async (req, res) => {
   user
     .save()
     .then((user) => {
-      const mailOptions = {
-        from: "RAOATECH <riliwanademola72@gmail.com>",
-        to: email,
-        subject: "We are thrilled to have you with us",
-        html: `<html>
-      <head>
-        <title>Email Template</title>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <meta name="x-apple-disable-message-reformatting" />
-        <style>
-          @import url("https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@600;700&display=swap");
-          @import url("https://fonts.googleapis.com/css2?family=Abril+Fatface&display=swap");
-          table,
-          td,
-          div,
-           h1 {
-           font-family:  'Abril Fatface', cursive, !important;
-          }
-          p {
-            font-family: "Bai jamjuree", sans-serif, !important;
-          }
-          table,
-          /* td {
-            border: 2px solid #000000 !important;
-          } */
-          /* Add your CSS styles here */
-        </style>
-      </head>
-      <body style="margin: 0; padding: 0; ">
-        <h1> RAOTECH IT-ELECTROMECH LIMITED </h1>
-        <p> Hey ${user.name}</p>
-        <p> We are thrilled to have you with us.  </p>
-      </body>
-    </html>
-    `,
-      };
+      const t = Token({
+        _userId: user._id,
+        token: crypto.randomBytes(16).toString("hex"),
+      });
 
-      transporter.sendMail(mailOptions, (error, info) => {
-        if (error) {
-          return res
-            .status(500)
-            .json({ message: "Error sending email", error });
-        } else {
-          return res
-            .status(201)
-            .json({ message: `${user.name} check you email for verification` });
-        }
+      t.save().then((token) => {
+        const emailLink = `http://${req.headers.host}/api/users/verify/${user.email}/${token.token}`;
+        const mailOptions = {
+          from: "RAOATECH <riliwanademola72@gmail.com>",
+          to: email,
+          subject: "We are thrilled to have you with us",
+          html: `<html>
+                  <head>
+
+                    <title>Email Template</title>
+                    <meta charset="UTF-8" />
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+                    <meta name="x-apple-disable-message-reformatting" />
+                    <style>
+                      @import url("https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@600;700&display=swap");
+                      @import url("https://fonts.googleapis.com/css2?family=Abril+Fatface&display=swap");
+                      
+                      div,
+                       h1 {
+                       font-family:  'Abril Fatface', cursive, !important;
+                      }
+                      p {
+                        font-family: "Bai jamjuree", sans-serif, !important;
+                      }
+                      
+                    </style>
+                  </head>
+                  <body style="margin: 0; padding: 0; ">
+                    <h1> RAOTECH IT-ELECTROMECH LIMITED </h1>
+                    <p> Hey ${user.name}</p>
+                    <p> We are thrilled to have you with us.  </p>
+                    <a href="${emailLink}">Click here to verify your email</a>
+                  </body>
+                </html>
+                `,
+        };
+
+        transporter.sendMail(mailOptions, (error, info) => {
+          if (error) {
+            return res
+              .status(500)
+              .json({ message: "Error sending email", error });
+          } else {
+            return res.status(201).json({
+              message: `${user.name} a verification email has been sent to ${user.email}`,
+            });
+          }
+        });
       });
     })
     .catch((e) => {
@@ -110,6 +119,54 @@ const signup = async (req, res) => {
     });
 };
 
+// Verification of Email
+const verifyEmail = async (req, res) => {
+  let existingUser;
+  let token;
+  try {
+    token = await Token.findOne({ token: req.params.token });
+  } catch (err) {
+    return res
+      .status(500)
+      .send("<h1>Verification Of Email Failed. Please Try again</h1>");
+  }
+
+  try {
+    existingUser = await User.findOne({
+      _id: token._userId.toString(),
+      email: req.params.email,
+    });
+  } catch (err) {
+    return res
+      .status(500)
+      .send("<h1>Verification Of Email Failed. Please Try again</h1>");
+  }
+
+  if (!existingUser) {
+    return res.status(422).json({
+      message:
+        "We were unable to find a user for this verification. Please SignUp!",
+    });
+  } else if (existingUser.isVerified && token) {
+    return res.status(201).send("<h1>User has already been verified. </h1>");
+  } else {
+    existingUser.isVerified = true;
+    existingUser
+      .save()
+      .then((user) => {
+        return res
+          .status(200)
+          .send(
+            `<h1> ${user.name}, your email has been sucessfully verified </h1>`
+          );
+      })
+      .catch((e) => {
+        res.status(500).send("<h1>Verification Of Email Failed</h1>");
+      });
+  }
+};
+
 module.exports = {
   signup,
+  verifyEmail,
 };
