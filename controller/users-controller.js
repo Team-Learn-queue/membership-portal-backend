@@ -44,8 +44,10 @@ const signup = async (req, res) => {
   } catch (err) {
     return res
       .status(422)
-      .json({ message: "Couldn't create User, Please Try Again" });
+      .json({ message: "Couldn't create User, Please Try Again", e:err });
   }
+
+
 
   const user = User({
     name,
@@ -65,7 +67,7 @@ const signup = async (req, res) => {
       t.save().then((token) => {
         const emailLink = `http://${req.headers.host}/api/users/verify/${user.email}/${token.token}`;
         const mailOptions = {
-          from: "RAOATECH <riliwanademola72@gmail.com>",
+          from: "Fintech Ceo's Forum<riliwanademola72@gmail.com>",
           to: email,
           subject: "We are thrilled to have you with us",
           html: `<html>
@@ -76,29 +78,32 @@ const signup = async (req, res) => {
                     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
                     <meta name="x-apple-disable-message-reformatting" />
                     <style>
-                      @import url("https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@600;700&display=swap");
-                      @import url("https://fonts.googleapis.com/css2?family=Abril+Fatface&display=swap");
+                    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;800&display=swap');
+
                       
-                      div,
-                       h1 {
-                       font-family:  'Abril Fatface', cursive, !important;
-                      }
-                      p {
-                        font-family: "Bai jamjuree", sans-serif, !important;
+                      
+                      body {
+                        font-family: "Poppins", sans-serif, !important;
                       }
                       
                     </style>
                   </head>
                   <body style="margin: 0; padding: 0; ">
-                    <h1> RAOTECH IT-ELECTROMECH LIMITED </h1>
-                    <p> Hey ${user.name}</p>
-                    <p> We are thrilled to have you with us.  </p>
-                    <a href="${emailLink}">Click here to verify your email</a>
-                  </body>
+
+                    <img src="https://ceoforum.netlify.app/assets/img/logo.png" alt="fintech ceo's forum"/>
+                    <p > Hello ${user.name},</p>
+                    <p> Thank you for joining Fintech Ceo's Forum, We are glad to have you. </p>
+                    <div style="justify-content: center; display: flex;margin-top: 70px;">
+      <a
+      style=" margin: 0 auto; background-color: #2d4f93; font-size: 15px; text-decoration: none; padding: 15px 20px; color: white; display: inline-block;"
+      href="${emailLink}"
+      >Please verify your email</a
+    >
+    </div>                 </body>
                 </html>
                 `,
         };
-
+        
         transporter.sendMail(mailOptions, (error, info) => {
           if (error) {
             return res

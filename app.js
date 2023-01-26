@@ -22,17 +22,18 @@ app.use((req, res, next) => {
 
 app.use("/api/users", usersRoutes.router);
 app.use("/api/admin", adminRoutes.router);
-app.use((req, res, next) => {
-  res.status(404).json({message: "Route cannot be Found"})
-});
 
 mongoose
-  .connect(
-    `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.zchdj.mongodb.net/${process.env.DB_NAME}?retryWrites=true&w=majority`
-  )
-  .then(() => {
-    app.listen(process.env.PORT || 5000);
+.connect(
+  `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.zchdj.mongodb.net/${process.env.DB_NAME}?retryWrites=true&w=majority`
+)
+.then(() => {
+    app.listen(process.env.PORT || 3000);
   })
   .catch((err) => {
     console.log(err);
   });
+
+
+  
+  
