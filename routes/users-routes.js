@@ -7,6 +7,8 @@ const router = express.Router()
 router.post('/signup', [
     check("name").not().isEmpty().withMessage("Enter your Fullname"),
     check("email").normalizeEmail().isEmail().withMessage("Enter a valid Email"),
+    check('phone_number').not().isEmpty().withMessage("Enter a valid phone number"),
+
     check('password').isLength({min:6}).withMessage("Enter a password with minimum of 6 characters")
     
   ], userController.signup);
