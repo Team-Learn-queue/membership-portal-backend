@@ -1,15 +1,58 @@
 const User = require("../models/users");
+const fs = require("fs");
+const csv = require("csv-string");
 
 const getUsers = async (req, res) => {
-  User.find({}, "email name phone_number isVerified")
+  let members;
+  User.find(
+    { isVerified: true },
+    " email name phone_number company isVerified sector"
+  )
     .then((users) => {
-      return res.status(200).json({ users: users });
+      members = users.map((user) => ({
+        
+        first_name: user.name.split(" ")[0],
+        last_name: user.name.split(" ")[1],
+        email: user.email,
+        company: user.company,
+        phone_number: user.phone_number,
+        isVerified: user.isVerified,
+      }));
+
+      return res.status(200).json({ users: members });
     })
     .catch((e) => {
       return res.status(500).json({ message: "Cannot find users" });
     });
 };
 
+
+//Get Single User
+
+const getUser = (req, res, next) => {
+  const userId = req.params.uid.replace(/\s+/g, ' ').trim();
+  User.findById(userId, "email name phone_number company isVerified role sector")
+    .then((user) => res.status(201).json(user))
+    .catch(() => {
+      return res.status(404).json({ message: "Invalid id" });    });
+};
+
+// const exportData = async (req,res) => {
+//   User.find({}, "-__v")
+//     .then((data) => {
+//       const headers = Object.keys(data[0].toObject());
+//       const csvData = csv.stringify([headers, ...data.map((item) => Object.values(item.toObject()))]);
+
+//       fs.writeFileSync('export.csv', csvData);
+//       res.download('export.csv');
+//     })
+//     .catch((error) => {
+//       res.status(500).json({ error });
+//     });
+// }
+
 module.exports = {
   getUsers,
+  getUser
+  // exportData
 };

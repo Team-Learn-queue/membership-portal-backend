@@ -1,0 +1,2 @@
+_id,name,email,role,phone_number,password,isVerified
+63d53c4a3011252d02d358c5,Ridwan,riliwanademola@yahoo.com,user,123456,$2a$12$gNDbNiUOfyZnbMOXictDSuMy1Ac7YBdtekScybCDAO5Tjvp6pkUTy,true

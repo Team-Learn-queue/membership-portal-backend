@@ -23,17 +23,14 @@ app.use((req, res, next) => {
 app.use("/api/users", usersRoutes.router);
 app.use("/api/admin", adminRoutes.router);
 
-mongoose
-.connect(
+mongoose.connect(
   `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.zchdj.mongodb.net/${process.env.DB_NAME}?retryWrites=true&w=majority`
 )
 .then(() => {
-    app.listen(process.env.PORT || 3000);
+    app.listen(process.env.PORT || 8000);
   })
   .catch((err) => {
     console.log(err);
   });
 
 
-  
-  
