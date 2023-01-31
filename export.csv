@@ -1,2 +1,3 @@
-_id,name,email,role,phone_number,password,isVerified
-63d53c4a3011252d02d358c5,Ridwan,riliwanademola@yahoo.com,user,123456,$2a$12$gNDbNiUOfyZnbMOXictDSuMy1Ac7YBdtekScybCDAO5Tjvp6pkUTy,true
+_id,first_name,last_name,email,role,phone_number,password,dob,company,license_status,regulator,sector,isVerified
+63d9284d0cf3579bbfe41a45,Emmanuel,Joshua,riliwaademola@yahoo.com,user,123456,$2a$12$BF/6P1S/xDh4a8S0d9KcfOC1tqjAEIc2tsVYPr/rF7dJcJe07NYna,Tue Jan 20 1970 10:19:29 GMT+0100 (West Africa Standard Time),Kudaa,Unlicensed,CBN,"Banking,Crypto",false
+63d92b4d9a0a7ae61c5db780,Ridwan,Adbulsalam,riliwanademola@yahoo.com,user,123456,$2a$12$hhqUCQsJSgtRrGU2B3wZJeKiWAG7mXVC3InrsmIQqGXQwd/AnFBAC,Tue Jan 20 1970 10:19:36 GMT+0100 (West Africa Standard Time),Raotech,Licensed,CBN,"Banking,Crypto",true

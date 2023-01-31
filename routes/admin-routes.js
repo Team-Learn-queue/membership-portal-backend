@@ -4,9 +4,9 @@ const adminController = require('../controller/admin-controller')
 const router = express.Router()
 
 router.get('/getusers', adminController.getUsers)
-router.get('/:uid', adminController.getUser )
+router.get('/user/:uid', adminController.getUser )
 
-// router.get('/export', adminController.exportData)
+router.get('/export', adminController.exportData)
 
 
 
