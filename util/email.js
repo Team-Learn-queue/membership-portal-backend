@@ -107,6 +107,8 @@ exports.forgotEmailTemplate = (user, resetLink) => ({
   "
 >
     <img
+    style="width: 150px"
+
       src="https://ceoforum.netlify.app/assets/img/logo.png"
       alt="fintech ceo's forum"
     />
@@ -158,6 +160,8 @@ exports.passwordSetTemplate = (user) => ({
   "
 >
     <img
+    style="width: 150px"
+
       src="https://ceoforum.netlify.app/assets/img/logo.png"
       alt="fintech ceo's forum"
     />
@@ -193,6 +197,8 @@ exports.verifiedTemplate = (user) => ({
   "
 >
     <img
+    style="width: 150px"
+
       src="https://ceoforum.netlify.app/assets/img/logo.png"
       alt="fintech ceo's forum"
     />

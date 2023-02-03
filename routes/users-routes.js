@@ -1,8 +1,10 @@
 const express = require("express");
 const { check } = require("express-validator");
+const multer = require("multer");
+
 const userController = require("../controller/users-controller");
 const { isResetTokenValid } = require("../middleware/user");
-
+const fileUpload = require("../middleware/file-upload");
 const router = express.Router();
 
 router.post(
@@ -35,12 +37,16 @@ router.post(
 router.post("/login", userController.login);
 
 router.get("/verify/:email/:token", userController.verifyEmail);
-router.post("/resend-link",  [
-  check("email")
-    .normalizeEmail()
-    .isEmail()
-    .withMessage("Enter a valid Email"),
-], userController.resendLink);
+router.post(
+  "/resend-link",
+  [
+    check("email")
+      .normalizeEmail()
+      .isEmail()
+      .withMessage("Enter a valid Email"),
+  ],
+  userController.resendLink
+);
 
 router.post(
   "/forgot-password",
@@ -63,5 +69,25 @@ router.post(
   userController.resetPassword
 );
 router.patch("/edit-profile/:id", userController.editProfile);
+router.post(
+  "/file-upload/:uid",
+  function (req, res, next) {
+    fileUpload(req, res, function (err) {
+      if (err instanceof multer.MulterError) {
+        return res.status(400).send({
+          message: "Too many files to upload, Files should not be more than 10.",
+        });
+      } else if (err) {
+        return res.status(400).send({
+          message: "Something went wrong, Please try again.",
+        });
+      }
+
+      next()
+    });
+  },
+  userController.fileUpload
+);
+router.get("/file-download/:uid", userController.downloadFile);
 
 exports.router = router;

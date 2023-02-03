@@ -1,12 +1,16 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
+const path = require('path')
 
 const usersRoutes = require("./routes/users-routes");
 const adminRoutes = require("./routes/admin-routes");
 
 const app = express();
 app.use(express.json());
+
+
+app.use('/uploads/files', express.static(path.join('uploads', 'files')))
 
 dotenv.config();
 app.use((req, res, next) => {

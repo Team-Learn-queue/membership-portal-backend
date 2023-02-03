@@ -60,6 +60,10 @@ const userSchema = new Schema({
     type: String,
     required: true,
   }],
+  resource_library: [{
+    type: mongoose.Types.ObjectId,
+    ref: 'FileUpload'
+  }],
   isVerified: {
     type: Boolean,
      default: false 

@@ -35,7 +35,9 @@ const getUsers = async (req, res) => {
 const getUser = (req, res, next) => {
   const userId = req.params.uid.replace(/\s+/g, ' ').trim();
   User.findById(userId, " email first_name last_name phone_number company isVerified role sector dob")
-    .then((user) => res.status(201).json(user))
+    .then((user) => {
+      if(!user) return res.status(401).json({message: "No user found"})
+      return res.status(201).json(user)})
     .catch(() => {
       return res.status(404).json({ message: "Invalid id" });    });
 };

@@ -1,15 +1,23 @@
 const { validationResult } = require("express-validator");
-const User = require("../models/users");
-const VerificationToken = require("../models/verificationToken");
-const ResetToken = require("../models/resetToken")
-const {transporter,verifyEmailTemplate, forgotEmailTemplate, passwordSetTemplate, verifiedTemplate} = require("../util/email")
 const jwt = require("jsonwebtoken");
-
+const { isValidObjectId } = require("mongoose");
 const crypto = require("crypto");
 
+const User = require("../models/users");
+const VerificationToken = require("../models/verificationToken");
+const ResetToken = require("../models/resetToken");
+const FileUpload = require("../models/resourceLibrary");
+
+const {
+  transporter,
+  verifyEmailTemplate,
+  forgotEmailTemplate,
+  passwordSetTemplate,
+  verifiedTemplate,
+} = require("../util/email");
 
 
-
+// Register New USER
 const signup = async (req, res) => {
   const errors = validationResult(req);
 
@@ -72,7 +80,7 @@ const signup = async (req, res) => {
       //   "process.env.JWT_KEY",
       //   { expiresIn: "1h" }
       // );
-      const randomBytes = crypto.randomBytes(16).toString("hex")
+      const randomBytes = crypto.randomBytes(16).toString("hex");
 
       const token = VerificationToken({
         userId: user._id,
@@ -81,7 +89,7 @@ const signup = async (req, res) => {
 
       token.save().then(() => {
         const emailLink = `http://${req.headers.host}/api/users/verify/${user.email}/${randomBytes}`;
-        const mailOptions = verifyEmailTemplate(user,emailLink)
+        const mailOptions = verifyEmailTemplate(user, emailLink);
 
         transporter.sendMail(mailOptions, (error, info) => {
           if (error) {
@@ -176,7 +184,7 @@ const login = async (req, res, next) => {
 // Verification of Email
 const verifyEmail = async (req, res) => {
   // const {email,token}  = req.params
-  // if (!email && !token) return res.status(403).json({message: "Invalid Request"}); 
+  // if (!email && !token) return res.status(403).json({message: "Invalid Request"});
   // if(!isValidObjectId(uid)) return res.status(404).json({ message: "Invalid User" });
   let existingUser;
   let token;
@@ -188,9 +196,14 @@ const verifyEmail = async (req, res) => {
       .send("<h1>Verification Of Email Failed. Please Try again</h1>");
   }
 
-  if(!token) return res.status(401).send("<h1>Your verification link may have expired. Please click on resend for verify your Email </h1>")
-  
- try {
+  if (!token)
+    return res
+      .status(401)
+      .send(
+        "<h1>Your verification link may have expired. Please click on resend for verify your Email </h1>"
+      );
+
+  try {
     existingUser = await User.findOne({
       _id: token.userId.toString(),
       email: req.params.email,
@@ -207,16 +220,16 @@ const verifyEmail = async (req, res) => {
         "We were unable to find a user for this verification. Please SignUp!",
     });
   } else if (existingUser.isVerified) {
-    await VerificationToken.findByIdAndDelete(token._id)
+    await VerificationToken.findByIdAndDelete(token._id);
 
     return res.status(201).send("<h1>User has already been verified. </h1>");
   } else {
     existingUser.isVerified = true;
-    await VerificationToken.findByIdAndDelete(token._id)
+    await VerificationToken.findByIdAndDelete(token._id);
     existingUser
       .save()
       .then((user) => {
-        const mailOptions = verifiedTemplate(user)
+        const mailOptions = verifiedTemplate(user);
         transporter.sendMail(mailOptions, (error, info) => {
           if (error) {
             return res
@@ -242,9 +255,6 @@ const verifyEmail = async (req, res) => {
   }
 };
 
-
-
-
 const resendLink = async (req, res) => {
   const errors = validationResult(req);
 
@@ -252,52 +262,52 @@ const resendLink = async (req, res) => {
     const message = errors.errors[0].msg;
     return res.status(500).json({ message: message });
   }
-  let user
+  let user;
   try {
     user = await User.findOne({ email: req.body.email });
   } catch (err) {
     return res
       .status(500)
-      .json({message: "Something went wrong, Please try again"});
+      .json({ message: "Something went wrong, Please try again" });
   }
 
-  if(!user) return res.status(401).json({message: "User not found"})
-  if(user.isVerified) return res.status(200).json({message: "This Account has already been verified, Please Log in"})
+  if (!user) return res.status(401).json({ message: "User not found" });
+  if (user.isVerified)
+    return res.status(200).json({
+      message: "This Account has already been verified, Please Log in",
+    });
 
+  const randomBytes = crypto.randomBytes(16).toString("hex");
 
-  const randomBytes = crypto.randomBytes(16).toString("hex")
+  const token = VerificationToken({
+    userId: user._id,
+    token: randomBytes,
+  });
 
-      const token = VerificationToken({
-        userId: user._id,
-        token: randomBytes,
+  token
+    .save()
+    .then(() => {
+      const emailLink = `http://${req.headers.host}/api/users/verify/${user.email}/${randomBytes}`;
+      const mailOptions = verifyEmailTemplate(user, emailLink);
+
+      transporter.sendMail(mailOptions, (error, info) => {
+        if (error) {
+          return res
+            .status(500)
+            .json({ message: "Error sending email", error });
+        } else {
+          return res.status(201).json({
+            message: `${user.first_name} ${user.last_name} a verification email has been sent to ${user.email}`,
+          });
+        }
       });
-
-      token.save().then(() => {
-        const emailLink = `http://${req.headers.host}/api/users/verify/${user.email}/${randomBytes}`;
-        const mailOptions = verifyEmailTemplate(user,emailLink)
-
-        transporter.sendMail(mailOptions, (error, info) => {
-          if (error) {
-            return res
-              .status(500)
-              .json({ message: "Error sending email", error });
-          } else {
-            return res.status(201).json({
-              message: `${user.first_name} ${user.last_name} a verification email has been sent to ${user.email}`,
-             
-            });
-          }
-        });
-      })
-      .catch((e) => {
-        return res
-          .status(500)
-          .json({ message: "Couldn't create User, Please Try Again", error: e });
-      })
-   
- }
-
-
+    })
+    .catch((e) => {
+      return res
+        .status(500)
+        .json({ message: "Couldn't create User, Please Try Again", error: e });
+    });
+};
 
 const forgotPassword = async (req, res) => {
   const errors = validationResult(req);
@@ -320,21 +330,18 @@ const forgotPassword = async (req, res) => {
   if (!user) {
     return res.status(400).json({ message: "User does not exist" });
   }
-  
-  
-  const oldToken = await ResetToken.findOne({userId:user.id})
-  if(oldToken) await oldToken.deleteOne();
-   
-  
 
-  const resetToken = ResetToken({userId:user.id, token:token})
- 
-  resetToken.save()
+  const oldToken = await ResetToken.findOne({ userId: user.id });
+  if (oldToken) await oldToken.deleteOne();
+
+  const resetToken = ResetToken({ userId: user.id, token: token });
+
+  resetToken
+    .save()
     .then(() => {
-      
       const resetLink = `http://${req.headers.host}/api/users/reset-password?userId=${user.id}&token=${token}`;
-      const mailOptions = forgotEmailTemplate(user,resetLink)
-      
+      const mailOptions = forgotEmailTemplate(user, resetLink);
+
       transporter.sendMail(mailOptions, (error, info) => {
         if (error) {
           return res
@@ -374,13 +381,8 @@ const resetPassword = async (req, res) => {
       .json({ message: "Something went wrong, Please try again" });
   }
   if (!user) {
-    return res
-      .status(400)
-      .json({ message: "User not found" });
+    return res.status(400).json({ message: "User not found" });
   }
-
- 
-
 
   // let hashedPassword;
   // try {
@@ -393,18 +395,19 @@ const resetPassword = async (req, res) => {
 
   // user.password = hashedPassword;
 
-  const samePass = await user.comparePassword(newPassword)
-  if(samePass) return res.status(402).json({
-    message: `New Password must be different`,
-  })
+  const samePass = await user.comparePassword(newPassword);
+  if (samePass)
+    return res.status(402).json({
+      message: `New Password must be different`,
+    });
 
- user.password = newPassword.trim()
+  user.password = newPassword.trim();
 
   user
     .save()
     .then((user) => {
-      ResetToken.findOneAndDelete({userId:user.id}).then(() => {
-       const mailOptions = passwordSetTemplate(user)
+      ResetToken.findOneAndDelete({ userId: user.id }).then(() => {
+        const mailOptions = passwordSetTemplate(user);
         transporter.sendMail(mailOptions, (error, info) => {
           if (error) {
             return res
@@ -416,9 +419,7 @@ const resetPassword = async (req, res) => {
             });
           }
         });
-        
-      })
-      
+      });
     })
     .catch((e) => {
       return res
@@ -429,7 +430,7 @@ const resetPassword = async (req, res) => {
 
 const editProfile = async (req, res) => {
   const errors = validationResult(req);
-  const userId = req.params.id.replace(/\s+/g, ' ').trim();
+  const userId = req.params.id.replace(/\s+/g, " ").trim();
 
   if (!errors.isEmpty()) {
     const message = errors.errors[0].msg;
@@ -442,7 +443,16 @@ const editProfile = async (req, res) => {
   try {
     editedUser = await User.findByIdAndUpdate(
       userId,
-      { $set: { first_name, last_name, email, phone_number, company: organization, dob } },
+      {
+        $set: {
+          first_name,
+          last_name,
+          email,
+          phone_number,
+          company: organization,
+          dob,
+        },
+      },
       { new: true }
     );
   } catch (err) {
@@ -451,14 +461,101 @@ const editProfile = async (req, res) => {
       .json({ message: " Something went Please try again" });
   }
 
-  if (!editedUser) {
+  if (!editedUser ) {
     return res.status(400).json({ message: "User does not exist" });
   }
 
-  return res.status(201).json({ message: " Your profile has been sucessfully edited"});
+  return res
+    .status(201)
+    .json({ message: " Your profile has been sucessfully edited" });
+};
 
+const fileUpload = async (req, res) => {
+  if (!req.files || req.files.length <= 0) return res.status(422).json({ message: "No Image Provided" });
+  let user;
+  const files = req.files;
+  const { uid } = req.params;
+  
+  if (!isValidObjectId(uid))
+    return res.status(404).json({ message: "Invalid Request" });
+  user = await User.findById(uid);
+  if (!user) return res.status(404).json({ message: "User not found" });
 
+ try { const promises = files.map(async (file) => {
+    const resourceL = FileUpload({
+      userId: user._id,
+      name: file.originalname,
+      type: file.mimetype,
+      path: file.path,
+    });
+    let resource = await resourceL.save()
+    user.resource_library.push(resource);
+    // user.save()
 
+    // return resourceL
+    // .save()
+    // .then((resource) => {
+    //   user.resource_library.push(resource);
+    //   user.save()
+    // })
+    
+  })
+  await Promise.all(promises);
+  user.save()
+  return res.status(200).json({ message: "Files has been sucessfully uploaded" });
+}
+
+catch(e) {
+  return res
+    .status(500)
+    .json({ message: "Error uploading resource", err: e });
+};
+ 
+  // const resourceL = FileUpload({
+  //   userId: user._id,
+  //   name: file.originalname,
+  //   type: file.mimetype,
+  //   path: file.path,
+  // });
+
+  // resourceL
+  //   .save()
+  //   .then((resource) => {
+  //     user.resource_library.push(resource);
+  //     user.save().then(() => {
+  //       return res.status(200).json({ message: "Resource sucessfully upload" });
+  //     });
+  //   })
+  //   .catch((e) => {
+  //     return res
+  //       .status(500)
+  //       .json({ message: "Error uploading resource", err: e });
+  //   });
+};
+
+const downloadFile = (req, res) => {
+  const { uid } = req.params;
+
+  if (!isValidObjectId(uid))
+    return res.status(404).json({ message: "Invalid Request" });
+  
+  
+  
+  User.findById(uid, " first_name last_name resource_library")
+    .populate({path : "resource_library", select: "name path"})
+    
+    .then((user) => {
+      if (!user) return res.status(400).json({ message: "No User Found" });
+
+      return res.status(200).json(user)
+
+      
+    }).catch((e) => {
+      return res
+      .status(500)
+      .json({ message: "Something went wrong, Please try again", err: e });
+  
+    })
 };
 
 module.exports = {
@@ -468,5 +565,7 @@ module.exports = {
   forgotPassword,
   resetPassword,
   editProfile,
-  resendLink
+  resendLink,
+  fileUpload,
+  downloadFile,
 };
