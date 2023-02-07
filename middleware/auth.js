@@ -14,6 +14,6 @@ module.exports = (req, res, next) => {
     req.userData = { userId: decodedToken.userId, role: decodedToken.role };  
     next();
   } catch (err) {
-    return next(Http.HttpError1("Authentication Failed", 403));
+    return res.status(403).json({message: "Authorization Failed"});
   }
 };

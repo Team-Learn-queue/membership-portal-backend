@@ -1,12 +1,18 @@
 const { validationResult } = require("express-validator");
 const jwt = require("jsonwebtoken");
 const { isValidObjectId } = require("mongoose");
+const mongoose = require("mongoose");
+const dotenv = require("dotenv");
 const crypto = require("crypto");
+const path = require('path')
 
 const User = require("../models/users");
 const VerificationToken = require("../models/verificationToken");
 const ResetToken = require("../models/resetToken");
 const FileUpload = require("../models/resourceLibrary");
+dotenv.config();
+
+const connection = mongoose.createConnection(`mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.zchdj.mongodb.net/${process.env.DB_NAME}?retryWrites=true&w=majority`, { useNewUrlParser: true, useUnifiedTopology: true }); // `gridfs` is the database, you can name it as you want
 
 const {
   transporter,
@@ -16,7 +22,15 @@ const {
   verifiedTemplate,
 } = require("../util/email");
 
-
+let bucket 
+  connection.once('open', () => {
+     bucket = new mongoose.mongo.GridFSBucket(connection, {
+      bucketName: 'resources', // Override the default bucket name (fs)
+      chunkSizeBytes: 1048576 // Override the default chunk size (255KB)
+    });
+    
+    
+  });
 // Register New USER
 const signup = async (req, res) => {
   const errors = validationResult(req);
@@ -186,6 +200,8 @@ const verifyEmail = async (req, res) => {
   // const {email,token}  = req.params
   // if (!email && !token) return res.status(403).json({message: "Invalid Request"});
   // if(!isValidObjectId(uid)) return res.status(404).json({ message: "Invalid User" });
+  
+
   let existingUser;
   let token;
   try {
@@ -339,7 +355,7 @@ const forgotPassword = async (req, res) => {
   resetToken
     .save()
     .then(() => {
-      const resetLink = `http://${req.headers.host}/api/users/reset-password?userId=${user.id}&token=${token}`;
+      const resetLink = `http://localhost:3000/reset-password?userId=${user.id}&token=${token}`;
       const mailOptions = forgotEmailTemplate(user, resetLink);
 
       transporter.sendMail(mailOptions, (error, info) => {
@@ -429,20 +445,25 @@ const resetPassword = async (req, res) => {
 };
 
 const editProfile = async (req, res) => {
+  console.log(req.userId)
+  // const {uid} = req.query
   const errors = validationResult(req);
-  const userId = req.params.id.replace(/\s+/g, " ").trim();
-
-  if (!errors.isEmpty()) {
+  // const userId = req.params.id.replace(/\s+/g, " ").trim();
+  // await User.findById
+if (!errors.isEmpty()) {
     const message = errors.errors[0].msg;
     return res.status(500).json({ message: message });
   }
-
-  const { first_name, last_name, email, phone_number, organization, dob } =
+const { first_name, last_name, email, phone_number, organization, dob } =
     req.body;
+
+  
+
+
   let editedUser;
   try {
     editedUser = await User.findByIdAndUpdate(
-      userId,
+      req.userData.userId,
       {
         $set: {
           first_name,
@@ -470,20 +491,28 @@ const editProfile = async (req, res) => {
     .json({ message: " Your profile has been sucessfully edited" });
 };
 
+
+
+
 const fileUpload = async (req, res) => {
+  if (req.fileValidationError) {
+    return res.status(422).json({ message: req.fileValidationError })
+}
   if (!req.files || req.files.length <= 0) return res.status(422).json({ message: "No Image Provided" });
+  
   let user;
   const files = req.files;
-  const { uid } = req.params;
+  // console.log(files)
+  // const { uid } = req.params;
   
-  if (!isValidObjectId(uid))
+  if (!isValidObjectId(req.userData.userId))
     return res.status(404).json({ message: "Invalid Request" });
-  user = await User.findById(uid);
+  user = await User.findById(req.userData.userId);
   if (!user) return res.status(404).json({ message: "User not found" });
 
  try { const promises = files.map(async (file) => {
     const resourceL = FileUpload({
-      userId: user._id,
+      userId: req.userData.userId,
       name: file.originalname,
       type: file.mimetype,
       path: file.path,
@@ -533,21 +562,21 @@ catch(e) {
   //   });
 };
 
-const downloadFile = (req, res) => {
-  const { uid } = req.params;
+const getFiles = (req, res) => {
+  // const { uid } = req.params;
 
-  if (!isValidObjectId(uid))
+  if (!isValidObjectId(req.userData.userId))
     return res.status(404).json({ message: "Invalid Request" });
   
   
   
-  User.findById(uid, " first_name last_name resource_library")
+  User.findById(req.userData.userId, " first_name last_name resource_library")
     .populate({path : "resource_library", select: "name path"})
     
     .then((user) => {
       if (!user) return res.status(400).json({ message: "No User Found" });
 
-      return res.status(200).json(user)
+      return res.status(200).json(user) 
 
       
     }).catch((e) => {
@@ -558,6 +587,45 @@ const downloadFile = (req, res) => {
     })
 };
 
+
+const fileDownload = async (req,res) => {
+
+  const {id} = req.params
+  if(!id) return res.status(422).json({message: "Resource does not exist"})
+
+  if (!isValidObjectId(id))
+    return res.status(404).json({ message: "Invalid Request" });
+  try {
+    const file = await FileUpload.findById(id)
+    if(file.userId.toString() !== req.userData.userId){
+      return res.status(401).json({message: "You are not allowed for this operation!" })
+  }
+   res.set({
+    'Content-Type': file.type
+   })
+  //  console.log(file.path)
+  //  console.log(path.join(__dirname, "..", file.path))
+   res.sendFile(path.join(__dirname, "..", file.path))
+  }
+  catch (err) {
+    res.status(400).json({message:"Error while downloading file, Please try again"})
+  }
+
+
+
+}
+
+const upload = (req,res) => {
+   res.json({message: "hi"})
+
+}
+
+const getUpload = (req,res) => {
+  
+  const cursor = bucket.find({});
+  cursor.forEach(doc => console.log(doc));}
+
+
 module.exports = {
   signup,
   verifyEmail,
@@ -566,6 +634,9 @@ module.exports = {
   resetPassword,
   editProfile,
   resendLink,
-  fileUpload,
-  downloadFile,
+  fileUpload, 
+  getFiles,
+  fileDownload,
+  upload,
+  getUpload
 };

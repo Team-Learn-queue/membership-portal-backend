@@ -1,9 +1,11 @@
 const User = require("../models/users");
 const fs = require("fs");
 const csv = require("csv-string");
+const auth = require("../middleware/auth")
 
 const getUsers = async (req, res) => {
-  // let members;
+  // console.log(req.userData.role)
+//  if(req.userData.role === "user") return res.status(403).json({message: "You are unauthorized for this operation"})
   User.find(
     { isVerified: true },
     " email first_name last_name phone_number company isVerified role sector dob"
