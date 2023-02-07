@@ -33,11 +33,7 @@ app.use((req, res, next) => {
 });
 
 
-app.use((error, req, res, next) => {
- 
-  res.status(error.code || 500);
-  res.json({ message: error.message || "Unknown Error" });
-});
+
 mongoose.connect(
   `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.zchdj.mongodb.net/${process.env.DB_NAME}?retryWrites=true&w=majority`
 )
