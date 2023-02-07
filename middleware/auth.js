@@ -1,20 +1,29 @@
-
 const jwt = require("jsonwebtoken");
 
 module.exports = (req, res, next) => {
-    if(req.method === 'OPTIONS') {
-        return next()
-    }
+  if (req.method === "OPTIONS") {
+    return next();
+  }
   try {
     const token = req.headers.authorization.split(" ")[1];
     if (!token) {
       throw new Error("Authentication Failed!");
     }
-    const decodedToken = jwt.verify(token, process.env.JWT_KEY);
-    if(!decodedToken) {return res.status(403).json({message: "Authorization Failed!"})}
-    req.userData = { userId: decodedToken.userId, role: decodedToken.role };  
-    next();
+    // try { jwt.verify(token, "your secret",  req.user = decode; return next(); // !important, you need this here to run. }); } catch (err) { return res.status(500).send({ message: err.message }); }
+    jwt.verify(token, process.env.JWT_KEY, (err, decodedToken) => {
+      if (err) {
+        return res.status(401).json({ message: err.message });
+      }
+      req.userData = { userId: decodedToken.userId, role: decodedToken.role };
+      return next();
+    });
+    // if (decodedToken) {
+    //   req.userData = { userId: decodedToken.userId, role: decodedToken.role };
+    //   next();
+    // } else {
+    //   return res.status(403).json({ message: "Authorization Failed!" });
+    // }
   } catch (err) {
-    return res.status(403).json({message: "Authorization Failed"});
+    return res.status(403).json({ message: "Authorization Failed" });
   }
 };

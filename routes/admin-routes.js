@@ -8,6 +8,7 @@ router.get('/getusers', adminController.getUsers)
 router.get('/user/:uid', adminController.getUser )
 
 router.get('/export', adminController.exportData)
+router.get('/all-files', auth, adminController.allFiles)
 
 
 

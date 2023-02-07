@@ -94,7 +94,7 @@ router.post(
   },
   userController.fileUpload
 );
-router.get("/get-files", auth, userController.getFiles);
+router.get("/get-files", auth, userController.userFiles);
 router.get("/file-download/:id", auth, userController.fileDownload);
 
 

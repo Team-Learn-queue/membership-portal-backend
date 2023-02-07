@@ -559,7 +559,7 @@ const fileUpload = async (req, res) => {
   //   });
 };
 
-const getFiles = (req, res) => {
+const userFiles = (req, res) => {
   // const { uid } = req.params;
 
   if (!isValidObjectId(req.userData.userId))
@@ -629,7 +629,7 @@ module.exports = {
   editProfile,
   resendLink,
   fileUpload,
-  getFiles,
+  userFiles,
   fileDownload,
   upload,
   getUpload,
