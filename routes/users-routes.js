@@ -86,10 +86,10 @@ router.post("/upload", auth, function (req, res, next) {
     next()
   });
 } , userController.upload);
-router.get("/get-files",auth,userController.getUploadedFiles);
-router.get("/get-file/:id",auth,userController.getSingleFile);
+router.get("/get-files/:uid",userController.getUploadedFiles);
+router.get("/get-file/:id",userController.getSingleFile);
 
-router.get("/download/:id",auth,userController.download);
+router.get("/download/:id",userController.download);
 
 
 // router.post(

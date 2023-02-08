@@ -500,14 +500,14 @@ const upload = async (req, res) => {
   }
   if (!req.files || req.files.length <= 0)
     return res.status(422).json({ message: "No Image Provided" });
-  if (!isValidObjectId(req.userData.userId))
-    return res.status(404).json({ message: "Invalid UserId" });
+  // if (!isValidObjectId(req.userData.userId))
+  //   return res.status(404).json({ message: "Invalid UserId" });
 
   res.status(201).json({ message: "File Uploaded Sucessfully" });
 };
 
 const getUploadedFiles = async (req, res) => {
-  const cursor = bucket.find({ "metadata.uploadedBy": req.userData.userId });
+  const cursor = bucket.find({ "metadata.uploadedBy": req.params.uid });
   if (!cursor) return res.status(404).json({ message: "User not found" });
   const filesMetadata = await cursor.toArray();
   res.json(filesMetadata);
@@ -532,14 +532,14 @@ const getSingleFile = async (req,res) => {
 const download = async (req, res) => {
   if (!isValidObjectId(req.params.id))
     return res.status(404).json({ message: "Invalid file-Id" });
-  try {
-    const user = bucket.find({ "metadata.uploadedBy": req.userData.userId });
-    const filesMetadata = await user.toArray();
-    if (!filesMetadata.length)
-      return res.json({ err: "Not Authorize to download this file" });
-  } catch (err) {
-    res.json({ err: `Error: ${err.message}` });
-  }
+  // try {
+  //   const user = bucket.find({ "metadata.uploadedBy": req.userData.userId });
+  //   const filesMetadata = await user.toArray();
+  //   if (!filesMetadata.length)
+  //     return res.json({ err: "Not Authorize to download this file" });
+  // } catch (err) {
+  //   res.json({ err: `Error: ${err.message}` });
+  // }
 
   try {
     const _id = mongoose.Types.ObjectId(req.params.id);
