@@ -14,7 +14,7 @@ module.exports = (req, res, next) => {
       if (err) {
         return res.status(401).json({ message: err.message });
       }
-      req.userData = { userId: decodedToken.userId, role: decodedToken.role };
+      req.userData = { userId: decodedToken.userId, role: decodedToken.role, username: decodedToken.username };
       return next();
     });
     // if (decodedToken) {

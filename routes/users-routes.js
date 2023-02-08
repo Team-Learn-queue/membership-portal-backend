@@ -71,31 +71,48 @@ router.post(
   userController.resetPassword
 );
 router.patch("/edit-profile", auth, userController.editProfile); 
-// router.post("/upload", auth, fileUpload.array("upload",10), userController.upload);
-// router.get("/get-upload",userController.getUpload);
+router.post("/upload", auth, function (req, res, next) {
+  fileUpload(req, res, function (err) {
+    if (err instanceof multer.MulterError) {
+      return res.status(400).json({
+        message: "Something went wrong, Files should not be more than 5",
+      });
+    } else if (err) {
+      return res.status(400).json({
+        message: "Something went wrong, Please try again.",
+      });
+    }
+
+    next()
+  });
+} , userController.upload);
+router.get("/get-files",auth,userController.getUploadedFiles);
+router.get("/get-file/:id",auth,userController.getSingleFile);
+
+router.get("/download/:id",auth,userController.download);
 
 
-router.post(
-  "/file-upload", auth,
-  function (req, res, next) {
-    fileUpload(req, res, function (err) {
-      if (err instanceof multer.MulterError) {
-        return res.status(400).json({
-          message: "Something went wrong, Files should not be more than 10",
-        });
-      } else if (err) {
-        return res.status(400).json({
-          message: "Something went wrong, Please try again.",
-        });
-      }
+// router.post(
+//   "/file-upload", auth,
+//   function (req, res, next) {
+//     fileUpload(req, res, function (err) {
+//       if (err instanceof multer.MulterError) {
+//         return res.status(400).json({
+//           message: "Something went wrong, Files should not be more than 10",
+//         });
+//       } else if (err) {
+//         return res.status(400).json({
+//           message: "Something went wrong, Please try again.",
+//         });
+//       }
 
-      next()
-    });
-  },
-  userController.fileUpload
-);
-router.get("/get-files", auth, userController.userFiles);
-router.get("/file-download/:id", auth, userController.fileDownload);
+//       next()
+//     });
+//   },
+//   userController.fileUpload
+// );
+// router.get("/get-files", auth, userController.userFiles);
+// router.get("/file-download/:id", auth, userController.fileDownload);
 
 
 exports.router = router;

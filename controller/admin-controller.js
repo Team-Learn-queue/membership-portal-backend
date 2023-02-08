@@ -3,8 +3,24 @@ const fs = require("fs");
 const csv = require("csv-string");
 const auth = require("../middleware/auth");
 const { isValidObjectId } = require("mongoose");
+const mongoose = require("mongoose");
+const dotenv = require("dotenv");
+
+dotenv.config();
 
 
+const connection = mongoose.createConnection(
+  `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.zchdj.mongodb.net/${process.env.DB_NAME}?retryWrites=true&w=majority`,
+  { useNewUrlParser: true, useUnifiedTopology: true }
+); 
+
+let bucket;
+connection.once("open", () => {
+  bucket = new mongoose.mongo.GridFSBucket(connection, {
+    bucketName: "resources", // Override the default bucket name (fs)
+    chunkSizeBytes: 1048576, // Override the default chunk size (255KB)
+  });
+});
 const getUsers = async (req, res) => {
   // console.log(req.userData.role)
   //  if(req.userData.role === "user") return res.status(403).json({message: "You are unauthorized for this operation"})
@@ -90,10 +106,22 @@ const allFiles = (req, res) => {
         .json({ message: "Something went wrong, Please try again", err: e });
     });
 };
+const getAllUploadedFiles = async (req, res) => {
+  if (req.userData.role === "user")
+    return res
+      .status(403)
+      .json({ message: "You are unauthorized for this operation" });
+    
 
+  const cursor = bucket.find({});
+  const filesMetadata = await cursor.toArray();
+  if (!filesMetadata.length) return res.json({ err: "No a File was found" });
+
+  res.json(filesMetadata);
+};
 module.exports = {
   getUsers,
   getUser,
   exportData,
-  allFiles
+  getAllUploadedFiles,
 };

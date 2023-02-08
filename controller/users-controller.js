@@ -17,7 +17,7 @@ dotenv.config();
 const connection = mongoose.createConnection(
   `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.zchdj.mongodb.net/${process.env.DB_NAME}?retryWrites=true&w=majority`,
   { useNewUrlParser: true, useUnifiedTopology: true }
-); // `gridfs` is the database, you can name it as you want
+); 
 
 const {
   transporter,
@@ -175,12 +175,16 @@ const login = async (req, res, next) => {
       .json({ message: "Please Verify your email then Login" });
   }
 
+  const name = `${existingUser.first_name} ${existingUser.last_name}`
   let token;
   try {
     token = jwt.sign(
       {
         userId: existingUser.id,
         role: existingUser.role,
+        username: name
+        
+
       },
       process.env.JWT_KEY,
       { expiresIn: "1h" }
@@ -490,134 +494,65 @@ const editProfile = async (req, res) => {
     .json({ message: " Your profile has been sucessfully edited" });
 };
 
-const fileUpload = async (req, res) => {
+const upload = async (req, res) => {
   if (req.fileValidationError) {
     return res.status(422).json({ message: req.fileValidationError });
   }
   if (!req.files || req.files.length <= 0)
     return res.status(422).json({ message: "No Image Provided" });
-
-  let user;
-  const files = req.files;
-  // console.log(files)
-  // const { uid } = req.params;
-
   if (!isValidObjectId(req.userData.userId))
-    return res.status(404).json({ message: "Invalid Request" });
-  user = await User.findById(req.userData.userId);
-  if (!user) return res.status(404).json({ message: "User not found" });
+    return res.status(404).json({ message: "Invalid UserId" });
 
-  try {
-    const promises = files.map(async (file) => {
-      const resourceL = FileUpload({
-        userId: req.userData.userId,
-        name: file.originalname,
-        type: file.mimetype,
-        path: file.path,
-      });
-      let resource = await resourceL.save();
-      user.resource_library.push(resource);
-      // user.save()
-
-      // return resourceL
-      // .save()
-      // .then((resource) => {
-      //   user.resource_library.push(resource);
-      //   user.save()
-      // })
-    });
-    await Promise.all(promises);
-    user.save();
-    return res
-      .status(200)
-      .json({ message: "Files has been sucessfully uploaded" });
-  } catch (e) {
-    return res
-      .status(500)
-      .json({ message: "Error uploading resource", err: e });
-  }
-
-  // const resourceL = FileUpload({
-  //   userId: user._id,
-  //   name: file.originalname,
-  //   type: file.mimetype,
-  //   path: file.path,
-  // });
-
-  // resourceL
-  //   .save()
-  //   .then((resource) => {
-  //     user.resource_library.push(resource);
-  //     user.save().then(() => {
-  //       return res.status(200).json({ message: "Resource sucessfully upload" });
-  //     });
-  //   })
-  //   .catch((e) => {
-  //     return res
-  //       .status(500)
-  //       .json({ message: "Error uploading resource", err: e });
-  //   });
+  res.status(201).json({ message: "File Uploaded Sucessfully" });
 };
 
-const userFiles = (req, res) => {
-  // const { uid } = req.params;
-
-  if (!isValidObjectId(req.userData.userId))
-    return res.status(404).json({ message: "Invalid Request" });
-
-  User.findById(req.userData.userId, " first_name last_name resource_library")
-    .populate({ path: "resource_library", select: "name path" })
-
-    .then((user) => {
-      if (!user) return res.status(400).json({ message: "No User Found" });
-
-      return res.status(200).json(user);
-    })
-    .catch((e) => {
-      return res
-        .status(500)
-        .json({ message: "Something went wrong, Please try again", err: e });
-    });
+const getUploadedFiles = async (req, res) => {
+  const cursor = bucket.find({ "metadata.uploadedBy": req.userData.userId });
+  if (!cursor) return res.status(404).json({ message: "User not found" });
+  const filesMetadata = await cursor.toArray();
+  res.json(filesMetadata);
 };
 
-const fileDownload = async (req, res) => {
-  const { id } = req.params;
-  if (!id) return res.status(422).json({ message: "Resource does not exist" });
-
-  if (!isValidObjectId(id))
-    return res.status(404).json({ message: "Invalid Request" });
+const getSingleFile = async (req,res) => {
+  if (!isValidObjectId(req.params.id))
+  return res.status(404).json({ message: "Invalid file-Id" });
   try {
-    const file = await FileUpload.findById(id);
-    if (file.userId.toString() !== req.userData.userId) {
-      return res
-        .status(401)
-        .json({ message: "You are not allowed for this operation!" });
-    }
-    const string = path.join(__dirname, "..", file.path);
-    if (!Fs.existsSync(string)) {
-      return res.status(422).json({ message: "Invalid Path" });
-    }
-    res.set({
-      "Content-Type": file.type,
-    });
-
-    
-
-    res.sendFile(path.join(__dirname, "..", file.path));
+    const _id = mongoose.Types.ObjectId(req.params.id);
+    const cursor = bucket.find({ _id });
+    const filesMetadata = await cursor.toArray();
+    res.json(filesMetadata[0] || null);
   } catch (err) {
-    res
-      .status(400)
-      .json({ message: "Error while downloading file, Please try again" });
+    res.json({ err: `Error: ${err.message}` });
   }
-};
 
-const upload = (req, res) => {
-  res.json({ message: "hi" });
-};
+}
 
-const getUpload = (req, res) => {
-  const cursor = bucket.find({});
-  cursor.forEach((doc) => console.log(doc));
+
+
+const download = async (req, res) => {
+  if (!isValidObjectId(req.params.id))
+    return res.status(404).json({ message: "Invalid file-Id" });
+  try {
+    const user = bucket.find({ "metadata.uploadedBy": req.userData.userId });
+    const filesMetadata = await user.toArray();
+    if (!filesMetadata.length)
+      return res.json({ err: "Not Authorize to download this file" });
+  } catch (err) {
+    res.json({ err: `Error: ${err.message}` });
+  }
+
+  try {
+    const _id = mongoose.Types.ObjectId(req.params.id);
+    // Getting the file first is only a guard to avoid FileNotFound error
+    const cursor = bucket.find({ _id });
+    const filesMetadata = await cursor.toArray();
+
+    if (!filesMetadata.length) return res.json({ err: "Not a File!" });
+    // You can simply stream a file like this with its id
+    bucket.openDownloadStream(_id).pipe(res);
+  } catch (err) {
+    res.json({ err: `Error: ${err.message}` });
+  }
 };
 
 module.exports = {
@@ -628,9 +563,8 @@ module.exports = {
   resetPassword,
   editProfile,
   resendLink,
-  fileUpload,
-  userFiles,
-  fileDownload,
+  getSingleFile,
   upload,
-  getUpload,
+  getUploadedFiles,
+  download,
 };
