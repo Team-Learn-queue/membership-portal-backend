@@ -14,10 +14,7 @@ const ResetToken = require("../models/resetToken");
 const FileUpload = require("../models/resourceLibrary");
 dotenv.config();
 
-const connection = mongoose.createConnection(
-  `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.zchdj.mongodb.net/${process.env.DB_NAME}?retryWrites=true&w=majority`,
-  { useNewUrlParser: true, useUnifiedTopology: true }
-); 
+const connection = mongoose.connection
 
 const {
   transporter,
@@ -507,6 +504,7 @@ const upload = async (req, res) => {
 };
 
 const getUploadedFiles = async (req, res) => {
+  
   const cursor = bucket.find({ "metadata.uploadedBy": req.params.uid });
   if (!cursor) return res.status(404).json({ message: "User not found" });
   const filesMetadata = await cursor.toArray();

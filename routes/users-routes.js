@@ -75,7 +75,7 @@ router.post("/upload", auth, function (req, res, next) {
   fileUpload(req, res, function (err) {
     if (err instanceof multer.MulterError) {
       return res.status(400).json({
-        message: "Something went wrong, Files should not be more than 5",
+        message: "Something went wrong, The field name should be upload and  Files should not be more than 5",
       });
     } else if (err) {
       return res.status(400).json({

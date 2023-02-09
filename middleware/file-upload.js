@@ -5,18 +5,28 @@ const { GridFsStorage } = require("multer-gridfs-storage");
 dotenv.config();
 
 
-const connection = mongoose.createConnection(`mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.zchdj.mongodb.net/${process.env.DB_NAME}?retryWrites=true&w=majority`, { useNewUrlParser: true, useUnifiedTopology: true }); 
+// const connection = mongoose.createConnection(
+//   `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.zchdj.mongodb.net/${process.env.DB_NAME}?retryWrites=true&w=majority`,
+//   { useNewUrlParser: true, useUnifiedTopology: true, }
+// );
+
+
+const connection = mongoose.connection
 
 const storage = new GridFsStorage({
   db: connection,
   file: (req, file) => ({
     filename: `${file.originalname}_${Date.now()}`, // Override the default filename
-    bucketName: 'resources', // Override the default bucket name (fs)
+    bucketName: "resources", // Override the default bucket name (fs)
     chunkSize: 500000, // Override the default chunk size (255KB)
-    metadata: { uploadedBy: req.userData.userId, username: req.userData.username} // Attach any metadata to the uploaded file
-  })
+    metadata: {
+      uploadedBy: req.userData.userId,
+      username: req.userData.username,
+    }, // Attach any metadata to the uploaded file
+  }),
 });
-const fileUpload = multer({ storage,
+const fileUpload = multer({
+  storage,
 
   fileFilter(req, file, cb) {
     if (!file.originalname.match(/\.(jpeg|jpg|png|pdf|doc|docx|xlsx|xlx)$/)) {
@@ -26,15 +36,9 @@ const fileUpload = multer({ storage,
     }
     cb(undefined, true);
   },
-}).array("upload",5);
-
+}).array("upload", 5);
 
 module.exports = fileUpload;
-
-
-
-
-
 
 // const fileUpload = multer({
 //   limits: 500000,
