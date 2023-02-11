@@ -5,14 +5,16 @@ const auth = require("../middleware/auth");
 const { isValidObjectId } = require("mongoose");
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
+const HttpError = require("../models/http-error")
 
 dotenv.config();
 
+const connection = mongoose.connection
 
-const connection = mongoose.createConnection(
-  `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.zchdj.mongodb.net/${process.env.DB_NAME}?retryWrites=true&w=majority`,
-  { useNewUrlParser: true, useUnifiedTopology: true }
-); 
+// const connection = mongoose.createConnection(
+//   `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.zchdj.mongodb.net/${process.env.DB_NAME}?retryWrites=true&w=majority`,
+//   { useNewUrlParser: true, useUnifiedTopology: true }
+// ); 
 
 let bucket;
 connection.once("open", () => {
@@ -21,32 +23,24 @@ connection.once("open", () => {
     chunkSizeBytes: 1048576, // Override the default chunk size (255KB)
   });
 });
-const getUsers = async (req, res) => {
+const getUsers = async (req, res, next) => {
   // console.log(req.userData.role)
-  //  if(req.userData.role === "user") return res.status(403).json({message: "You are unauthorized for this operation"})
+  //  if(req.userData.role === "user") return next(HttpError("Invalid Credentials, could not log you in", 403));
+  //  return res.status(403).json({message: "You are unauthorized for this operation"})
   User.find(
     { isVerified: true },
     " email first_name last_name phone_number company isVerified role sector dob"
   )
     .then((users) => {
-      // members = users.map((user) => ({
-
-      //   first_name: user.name.split(" ")[0],
-      //   last_name: user.name.split(" ")[1],
-      //   email: user.email,
-      //   company: user.company,
-      //   phone_number: user.phone_number,
-      //   isVerified: user.isVerified,
-      //   role: user.role,
-      //   sector: user.sector,
-      //   dob: user.dob
-      // }));
+      
 
       return res.status(200).json({ users });
+
     })
     .catch((e) => {
       return res.status(500).json({ message: "Cannot find users" });
     });
+
 };
 
 //Get Single User

@@ -183,8 +183,7 @@ const login = async (req, res, next) => {
         
 
       },
-      process.env.JWT_KEY,
-      { expiresIn: "1h" }
+      process.env.JWT_KEY
     );
   } catch (err) {
     return res

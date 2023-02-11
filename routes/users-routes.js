@@ -10,8 +10,8 @@ const auth = require("../middleware/auth")
 const router = express.Router();
 
 router.post(
-  "/signup",
-  [
+  "/signup", 
+  [ 
     check("name").not().isEmpty().withMessage("Enter your Fullname"),
     check("email")
       .normalizeEmail()
