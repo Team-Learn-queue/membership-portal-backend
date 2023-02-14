@@ -21,7 +21,7 @@ router.post(
   ],
   auth,
   discussionController.createGroup
-);
+); // add auth
 router.post(
   "/send-message/:gId",
   [check("message").not().isEmpty().withMessage("Message Field is Empty")],
@@ -30,5 +30,9 @@ router.post(
 );
 router.get("/get-group/:gId", auth, discussionController.getGroup);
 router.get("/get-messages/:gId", auth, discussionController.getMessage);
+router.get("/join/:gId", auth, discussionController.JoinGroup);
+
+router.get("/user-groups", auth, discussionController.getUserGroups);
+
 
 exports.router = router;

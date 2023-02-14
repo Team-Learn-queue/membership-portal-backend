@@ -70,6 +70,8 @@ router.post(
   isResetTokenValid,
   userController.resetPassword
 );
+router.get("/get-user", auth, userController.getLoggedUser); 
+
 router.patch("/edit-profile", auth, userController.editProfile); 
 router.post("/upload", auth, function (req, res, next) {
   fileUpload(req, res, function (err) {
@@ -90,6 +92,11 @@ router.get("/get-files/:uid",userController.getUploadedFiles);
 router.get("/get-file/:id",userController.getSingleFile);
 
 router.get("/download/:id",userController.download);
+router.get("/existing-bills", auth,userController.getUserExistingBill )
+router.get("/existing-bills", auth,userController.getUserExistingBill )
+router.get("/payment-history", auth,userController.getPaymentHistory )
+
+
 
 
 // router.post(

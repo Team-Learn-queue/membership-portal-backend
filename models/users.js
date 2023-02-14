@@ -59,10 +59,15 @@ const userSchema = new Schema({
     type: String,
     required: true,
   }],
-  // resource_library: [{
-  //   type: Object
-  //   // ref: 'resources.files'
-  // }],
+  bills:[ {
+    type: Schema.Types.ObjectId,
+    ref: "Bill",
+  }],
+  groups:[{
+    type: Schema.Types.ObjectId,
+    ref: "DiscussionGroup",
+  }
+  ],
   isVerified: {
     type: Boolean,
      default: false 

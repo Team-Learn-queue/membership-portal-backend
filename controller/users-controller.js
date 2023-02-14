@@ -14,7 +14,7 @@ const ResetToken = require("../models/resetToken");
 const FileUpload = require("../models/resourceLibrary");
 dotenv.config();
 
-const connection = mongoose.connection
+const connection = mongoose.connection;
 
 const {
   transporter,
@@ -172,16 +172,14 @@ const login = async (req, res, next) => {
       .json({ message: "Please Verify your email then Login" });
   }
 
-  const name = `${existingUser.first_name} ${existingUser.last_name}`
+  const name = `${existingUser.first_name} ${existingUser.last_name}`;
   let token;
   try {
     token = jwt.sign(
       {
         userId: existingUser.id,
         role: existingUser.role,
-        username: name
-        
-
+        username: name,
       },
       process.env.JWT_KEY
     );
@@ -446,8 +444,24 @@ const resetPassword = async (req, res) => {
     });
 };
 
+const getLoggedUser = (req,res) => {
+
+  const userId = req.userData.userId;
+  User.findById(
+    userId,
+    " email first_name last_name phone_number company  dob"
+  )
+    .then((user) => {
+      if (!user) return res.status(401).json({ message: "No user found" });
+      return res.status(201).json(user);
+    })
+    .catch(() => {
+      return res.status(404).json({ message: "Invalid id" });
+    });
+}
+
 const editProfile = async (req, res) => {
-  console.log(req.userId);
+  // console.log(req.userId);
   // const {uid} = req.query
   const errors = validationResult(req);
   // const userId = req.params.id.replace(/\s+/g, " ").trim();
@@ -503,16 +517,15 @@ const upload = async (req, res) => {
 };
 
 const getUploadedFiles = async (req, res) => {
-  
   const cursor = bucket.find({ "metadata.uploadedBy": req.params.uid });
   if (!cursor) return res.status(404).json({ message: "User not found" });
   const filesMetadata = await cursor.toArray();
   res.json(filesMetadata);
 };
 
-const getSingleFile = async (req,res) => {
+const getSingleFile = async (req, res) => {
   if (!isValidObjectId(req.params.id))
-  return res.status(404).json({ message: "Invalid file-Id" });
+    return res.status(404).json({ message: "Invalid file-Id" });
   try {
     const _id = mongoose.Types.ObjectId(req.params.id);
     const cursor = bucket.find({ _id });
@@ -521,10 +534,7 @@ const getSingleFile = async (req,res) => {
   } catch (err) {
     res.json({ err: `Error: ${err.message}` });
   }
-
-}
-
-
+};
 
 const download = async (req, res) => {
   if (!isValidObjectId(req.params.id))
@@ -552,6 +562,58 @@ const download = async (req, res) => {
   }
 };
 
+const getNewBill = () => {
+
+}
+
+const getUserExistingBill = async (req, res) => {
+  //  await User.findOne({ _id: req.userData.userId });
+
+  let user;
+  try {
+    user = await User.findById( req.userData.userId , "bills")
+      .populate({
+        path: "bills",
+        select:
+          "bill_name bill_amount status mode_of_payment transaction_ref createdAt",
+      })
+      .exec();
+    const userBills = user.bills.filter((bill) => bill.status === "unpaid" || bill.status === "dued"  )
+    res.json({
+      user_id: user.id,
+      user_bills:userBills});
+  } catch (err) {
+    console.log(err);
+    return res
+      .status(500)
+      .json({ message: "Something went wrong, Please try again" });
+  }
+
+};
+
+const getPaymentHistory = async (req, res) => {
+  let user;
+  try {
+    user = await User.findById( req.userData.userId , "bills")
+      .populate({
+        path: "bills",
+        select:
+          "bill_name bill_amount status mode_of_payment transaction_ref createdAt",
+      })
+      .exec();
+
+    const userBills = user.bills.filter((bill) => bill.status === "paid"  )
+    res.json({
+      user_id: user.id,
+      user_bills:userBills});
+  } catch (err) {
+    console.log(err);
+    return res
+      .status(500)
+      .json({ message: "Something went wrong, Please try again" });
+  }
+};
+
 module.exports = {
   signup,
   verifyEmail,
@@ -560,8 +622,11 @@ module.exports = {
   resetPassword,
   editProfile,
   resendLink,
+  getLoggedUser,
   getSingleFile,
   upload,
   getUploadedFiles,
   download,
+  getUserExistingBill,
+  getPaymentHistory,
 };

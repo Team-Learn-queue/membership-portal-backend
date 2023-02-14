@@ -1,20 +1,26 @@
 const User = require("../models/users");
+const Bill = require("../models/bill");
 const fs = require("fs");
 const csv = require("csv-string");
 const auth = require("../middleware/auth");
-const { isValidObjectId } = require("mongoose");
+// const { isValidObjectId } = require("mongoose");
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
-const HttpError = require("../models/http-error")
+const { validationResult } = require("express-validator");
+// const jwt = require("jsonwebtoken");
+// const Fs = require("fs");
+
+const { isValidObjectId } = require("mongoose");
+const HttpError = require("../models/http-error");
 
 dotenv.config();
 
-const connection = mongoose.connection
+const connection = mongoose.connection;
 
 // const connection = mongoose.createConnection(
 //   `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.zchdj.mongodb.net/${process.env.DB_NAME}?retryWrites=true&w=majority`,
 //   { useNewUrlParser: true, useUnifiedTopology: true }
-// ); 
+// );
 
 let bucket;
 connection.once("open", () => {
@@ -25,22 +31,18 @@ connection.once("open", () => {
 });
 const getUsers = async (req, res, next) => {
   // console.log(req.userData.role)
-  //  if(req.userData.role === "user") return next(HttpError("Invalid Credentials, could not log you in", 403));
+   if(req.userData.role === "user") return next(HttpError("You are unauthorized for this operation", 403));
   //  return res.status(403).json({message: "You are unauthorized for this operation"})
   User.find(
     { isVerified: true },
     " email first_name last_name phone_number company isVerified role sector dob"
   )
     .then((users) => {
-      
-
       return res.status(200).json({ users });
-
     })
     .catch((e) => {
       return res.status(500).json({ message: "Cannot find users" });
     });
-
 };
 
 //Get Single User
@@ -105,7 +107,6 @@ const getAllUploadedFiles = async (req, res) => {
     return res
       .status(403)
       .json({ message: "You are unauthorized for this operation" });
-    
 
   const cursor = bucket.find({});
   const filesMetadata = await cursor.toArray();
@@ -113,9 +114,132 @@ const getAllUploadedFiles = async (req, res) => {
 
   res.json(filesMetadata);
 };
+
+const createBills = async (req, res) => {
+  if(req.userData.role === "user") return next(HttpError("You are unauthorized for this operation", 403));
+
+  const errors = validationResult(req);
+
+  if (!errors.isEmpty()) {
+    const message = errors.errors[0].msg;
+    return res.status(500).json({ message: message });
+  }
+  let existingUser;
+  let groupUsers;
+
+  const { bill_name, bill_amount, bill_type, duration, individual, group } =
+    req.body;
+
+  if (!individual && !group)
+    return res.json({ message: "Bill is not assigned to anyone." });
+
+  if (individual) {
+    if (!isValidObjectId(individual))
+      return res.status(404).json({ message: "Invalid userId" });
+    try {
+      existingUser = await User.findById(individual);
+    } catch (err) {
+      return res.status(500).json({ message: " Signing Up Failed" });
+    }
+
+    if (!existingUser)
+      return res.status(422).json({ message: "User not found" });
+  }
+
+  if (group) {
+    groupUsers = await User.find({ license_status: group });
+  }
+  const checkUser = existingUser ? existingUser.id : null;
+
+  if (existingUser) {
+    const bill = Bill({
+      bill_name,
+      bill_amount,
+      bill_type,
+      duration,
+      individual: checkUser,
+    });
+    try {
+      await bill.save();
+    } catch (err) {
+      return res.json({ message: "Something went wrong", e: err });
+    }
+    existingUser.bills.push(bill);
+    await existingUser.save();
+  }
+  if (group && groupUsers.length > 0) {
+    try {
+      const promises = groupUsers.map(async (user) => {
+        const bill = Bill({
+          bill_name,
+          bill_amount,
+          bill_type,
+          duration,
+          individual: user.id,
+        });
+        let b = await bill.save();
+        user.bills.push(b);
+        user.save();
+      });
+      await Promise.all(promises);
+    } catch (e) {
+      return res
+        .status(500)
+        .json({ message: "Error in assigning bills to group", err: e });
+    }
+  }
+
+  if (!existingUser && groupUsers.length === 0)
+    return res.json({ message: "Bill is not assigned to anyone!." });
+
+  res.status(201).json({ message: "Bill assigned sucessfully" });
+};
+
+const getExistingBill = async (req, res) => {
+  if(req.userData.role === "user") return next(HttpError("You are unauthorized for this operation", 403));
+
+  try{const bill = await Bill.find({$or:[ {'status':"unpaid"}, {'status':"dued"} ]}, "  bill_name bill_amount status mode_of_payment transaction_ref createdAt")
+    .populate({
+      path: "individual",
+      select:
+        "first_name last_name ",
+    })
+    .exec();
+    res.json(bill);
+
+  }
+  catch(err) {
+    console.log(err)
+     return res.status(500).json({message: "Something went wrong, Please try again"})
+  }
+};
+
+const getPaymentReport = async (req, res) => {
+  if(req.userData.role === "user") return next(HttpError("You are unauthorized for this operation", 403));
+
+  try{const bill = await Bill.find({status:"paid"}, "  bill_name bill_amount status mode_of_payment transaction_ref createdAt")
+    .populate({
+      path: "individual",
+      select:
+        "first_name last_name ",
+    })
+    .exec();
+    res.json(bill);
+
+  }
+  catch(err) {
+    console.log(err)
+     return res.status(500).json({message: "Something went wrong, Please try again"})
+  }
+};
+
+
 module.exports = {
   getUsers,
   getUser,
   exportData,
   getAllUploadedFiles,
+  createBills,
+  getExistingBill,
+  getPaymentReport
 };

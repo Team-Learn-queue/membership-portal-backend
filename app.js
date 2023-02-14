@@ -66,3 +66,12 @@ mongoose
   .catch((err) => {
     console.log(err);
   });
+
+
+  // "error": {
+  //   "errors": {
+  //       "regulator": {
+  //           "name": "ValidatorError",
+  //           "message": "CN is not an option",
+  //           "properties": {
+  //               "message": "CN is not an option",
