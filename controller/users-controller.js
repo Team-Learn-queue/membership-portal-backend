@@ -46,7 +46,7 @@ const signup = async (req, res) => {
     phone_number,
     password,
     company,
-    license_status,
+    license_status,  
     regulator,
     sector,
     dob,

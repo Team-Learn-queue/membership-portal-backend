@@ -39,7 +39,7 @@ const userSchema = new Schema({
     type: String,
     required: true,
   },
-  license_status: {
+  license_status: { 
     type: String,
     enum:{ 
       values: ['Licensed', 'Unlicensed'],

@@ -31,7 +31,7 @@ connection.once("open", () => {
 });
 const getUsers = async (req, res, next) => {
   // console.log(req.userData.role)
-   if(req.userData.role === "user") return next(HttpError("You are unauthorized for this operation", 403));
+  //  if(req.userData.role === "user") return next(HttpError("You are unauthorized for this operation", 403));
   //  return res.status(403).json({message: "You are unauthorized for this operation"})
   User.find(
     { isVerified: true },
