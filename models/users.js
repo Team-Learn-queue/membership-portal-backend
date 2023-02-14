@@ -50,14 +50,13 @@ const userSchema = new Schema({
   regulator: {
     type: String,
     enum: {
-      values: ['CBN','PENCOM','NAICOM','SEC'],
+      values: ['CBN','PENCOM','NAICOM','SEC', null],
       message: '{VALUE} is not an option'
     },
     
   },
   sector: [{
     type: String,
-    required: true,
   }],
   bills:[ {
     type: Schema.Types.ObjectId,

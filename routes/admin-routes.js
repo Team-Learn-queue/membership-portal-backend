@@ -5,10 +5,10 @@ const { check } = require("express-validator");
 
 const router = express.Router()
 
-router.get('/getusers', adminController.getUsers) // Add auth middleware to identify that the user is an admin before performin the operation
+router.get('/getusers',auth, adminController.getUsers) // Add auth middleware to identify that the user is an admin before performin the operation
 router.get('/user/:uid', adminController.getUser )
 
-router.get('/export', adminController.exportData)  // Add auth middleware to identify that the user is an admin before performin the operation
+router.get('/export', auth, adminController.exportData)  // Add auth middleware to identify that the user is an admin before performin the operation
 router.get('/all-files', auth, adminController.getAllUploadedFiles)
 router.post('/create-bill',auth,[ 
     check("bill_name").not().isEmpty().withMessage("Bill name is required"),

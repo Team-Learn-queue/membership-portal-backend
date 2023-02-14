@@ -31,7 +31,7 @@ connection.once("open", () => {
 });
 const getUsers = async (req, res, next) => {
   // console.log(req.userData.role)
-  //  if(req.userData.role === "user") return next(HttpError("You are unauthorized for this operation", 403));
+   if(req.userData.role === "user") return next(HttpError("You are unauthorized for this operation", 403));
   //  return res.status(403).json({message: "You are unauthorized for this operation"})
   User.find(
     { isVerified: true },
@@ -62,7 +62,9 @@ const getUser = (req, res, next) => {
     });
 };
 
-const exportData = async (req, res) => {
+const exportData = async (req, res, next) => {
+  if(req.userData.role === "user") return next(HttpError("You are unauthorized for this operation", 403));
+
   User.find({}, "-__v")
     .then((data) => {
       const headers = Object.keys(data[0].toObject());
@@ -102,7 +104,7 @@ const allFiles = (req, res) => {
         .json({ message: "Something went wrong, Please try again", err: e });
     });
 };
-const getAllUploadedFiles = async (req, res) => {
+const getAllUploadedFiles = async (req, res, next) => {
   if (req.userData.role === "user")
     return res
       .status(403)
@@ -115,7 +117,7 @@ const getAllUploadedFiles = async (req, res) => {
   res.json(filesMetadata);
 };
 
-const createBills = async (req, res) => {
+const createBills = async (req, res, next) => {
   if(req.userData.role === "user") return next(HttpError("You are unauthorized for this operation", 403));
 
   const errors = validationResult(req);
@@ -195,7 +197,7 @@ const createBills = async (req, res) => {
   res.status(201).json({ message: "Bill assigned sucessfully" });
 };
 
-const getExistingBill = async (req, res) => {
+const getExistingBill = async (req, res, next) => {
   if(req.userData.role === "user") return next(HttpError("You are unauthorized for this operation", 403));
 
   try{const bill = await Bill.find({$or:[ {'status':"unpaid"}, {'status':"dued"} ]}, "  bill_name bill_amount status mode_of_payment transaction_ref createdAt")
@@ -214,7 +216,7 @@ const getExistingBill = async (req, res) => {
   }
 };
 
-const getPaymentReport = async (req, res) => {
+const getPaymentReport = async (req, res, next) => {
   if(req.userData.role === "user") return next(HttpError("You are unauthorized for this operation", 403));
 
   try{const bill = await Bill.find({status:"paid"}, "  bill_name bill_amount status mode_of_payment transaction_ref createdAt")

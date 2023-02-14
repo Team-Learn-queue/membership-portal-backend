@@ -1,17 +1,14 @@
 const { validationResult } = require("express-validator");
 const jwt = require("jsonwebtoken");
-const Fs = require("fs");
 
 const { isValidObjectId } = require("mongoose");
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 const crypto = require("crypto");
-const path = require("path");
 
 const User = require("../models/users");
 const VerificationToken = require("../models/verificationToken");
 const ResetToken = require("../models/resetToken");
-const FileUpload = require("../models/resourceLibrary");
 dotenv.config();
 
 const connection = mongoose.connection;
@@ -46,7 +43,7 @@ const signup = async (req, res) => {
     phone_number,
     password,
     company,
-    license_status,  
+    license_status,
     regulator,
     sector,
     dob,
@@ -69,6 +66,8 @@ const signup = async (req, res) => {
   //     .status(422)
   //     .json({ message: "Couldn't create User, Please Try Again", e: err });
   // }
+  let confirmStatus
+  license_status === "Unlicensed"? confirmStatus = null : confirmStatus = regulator
 
   const user = User({
     first_name,
@@ -78,7 +77,7 @@ const signup = async (req, res) => {
     password,
     company,
     license_status,
-    regulator,
+    regulator : confirmStatus,
     sector,
     dob,
   });
@@ -86,14 +85,6 @@ const signup = async (req, res) => {
   user
     .save()
     .then((user) => {
-      // let userToken = jwt.sign(
-      //   {
-      //     userId: user.id,
-      //     role: user.role,
-      //   },
-      //   "process.env.JWT_KEY",
-      //   { expiresIn: "1h" }
-      // );
       const randomBytes = crypto.randomBytes(16).toString("hex");
 
       const token = VerificationToken({
@@ -113,8 +104,6 @@ const signup = async (req, res) => {
           } else {
             return res.status(201).json({
               message: `${user.first_name} ${user.last_name} a confirmation email has been sent to ${user.email}`,
-              // userObject: { userId: user.id, role: user.role },
-              // token: userToken,
             });
           }
         });
@@ -198,10 +187,6 @@ const login = async (req, res, next) => {
 
 // Verification of Email
 const verifyEmail = async (req, res) => {
-  // const {email,token}  = req.params
-  // if (!email && !token) return res.status(403).json({message: "Invalid Request"});
-  // if(!isValidObjectId(uid)) return res.status(404).json({ message: "Invalid User" });
-
   let existingUser;
   let token;
   try {
@@ -233,7 +218,7 @@ const verifyEmail = async (req, res) => {
   if (!existingUser) {
     return res.status(422).json({
       message:
-        "We were unable to find a user for this verification. Please SignUp!",
+        "We were unable to find a user for this verification at this moment. ",
     });
   } else if (existingUser.isVerified) {
     await VerificationToken.findByIdAndDelete(token._id);
@@ -366,8 +351,6 @@ const forgotPassword = async (req, res) => {
         } else {
           return res.status(201).json({
             message: `A password reset email has been sent to ${user.email}`,
-            // userObject: { userId: user.id, role: user.role },
-            // token: userToken,
           });
         }
       });
@@ -444,13 +427,9 @@ const resetPassword = async (req, res) => {
     });
 };
 
-const getLoggedUser = (req,res) => {
-
+const getLoggedUser = (req, res) => {
   const userId = req.userData.userId;
-  User.findById(
-    userId,
-    " email first_name last_name phone_number company  dob"
-  )
+  User.findById(userId, " email first_name last_name phone_number company  dob")
     .then((user) => {
       if (!user) return res.status(401).json({ message: "No user found" });
       return res.status(201).json(user);
@@ -458,14 +437,11 @@ const getLoggedUser = (req,res) => {
     .catch(() => {
       return res.status(404).json({ message: "Invalid id" });
     });
-}
+};
 
 const editProfile = async (req, res) => {
-  // console.log(req.userId);
-  // const {uid} = req.query
   const errors = validationResult(req);
-  // const userId = req.params.id.replace(/\s+/g, " ").trim();
-  // await User.findById
+
   if (!errors.isEmpty()) {
     const message = errors.errors[0].msg;
     return res.status(500).json({ message: message });
@@ -562,39 +538,74 @@ const download = async (req, res) => {
   }
 };
 
-const getNewBill = () => {
+const getNewBill = async (req, res) => {
+  const filterFunc = (bill) => {
+    const dateCreated = new Date(bill.createdAt);
+    const expiredDate = new Date(
+      dateCreated.getFullYear(),
+      dateCreated.getMonth(),
+      dateCreated.getDate() + 3
+    );
+    const currentDate = new Date();
 
-}
-
-const getUserExistingBill = async (req, res) => {
-  //  await User.findOne({ _id: req.userData.userId });
-
+    return (
+      expiredDate > currentDate &&
+      (bill.status === "unpaid" || bill.status === "dued")
+    );
+  };
   let user;
   try {
-    user = await User.findById( req.userData.userId , "bills")
+    user = await User.findById(req.userData.userId, "bills")
       .populate({
         path: "bills",
         select:
           "bill_name bill_amount status mode_of_payment transaction_ref createdAt",
       })
       .exec();
-    const userBills = user.bills.filter((bill) => bill.status === "unpaid" || bill.status === "dued"  )
+    const userBills = user.bills.filter((bill) => filterFunc(bill));
     res.json({
       user_id: user.id,
-      user_bills:userBills});
+      user_bills: userBills,
+    });
   } catch (err) {
     console.log(err);
     return res
       .status(500)
       .json({ message: "Something went wrong, Please try again" });
   }
+};
 
+const getUserExistingBill = async (req, res) => {
+  //  await User.findOne({ _id: req.userData.userId });
+
+  let user;
+  try {
+    user = await User.findById(req.userData.userId, "bills")
+      .populate({
+        path: "bills",
+        select:
+          "bill_name bill_amount status mode_of_payment transaction_ref createdAt",
+      })
+      .exec();
+    const userBills = user.bills.filter(
+      (bill) => bill.status === "unpaid" || bill.status === "dued"
+    );
+    res.json({
+      user_id: user.id,
+      user_bills: userBills,
+    });
+  } catch (err) {
+    console.log(err);
+    return res
+      .status(500)
+      .json({ message: "Something went wrong, Please try again" });
+  }
 };
 
 const getPaymentHistory = async (req, res) => {
   let user;
   try {
-    user = await User.findById( req.userData.userId , "bills")
+    user = await User.findById(req.userData.userId, "bills")
       .populate({
         path: "bills",
         select:
@@ -602,10 +613,11 @@ const getPaymentHistory = async (req, res) => {
       })
       .exec();
 
-    const userBills = user.bills.filter((bill) => bill.status === "paid"  )
+    const userBills = user.bills.filter((bill) => bill.status === "paid");
     res.json({
       user_id: user.id,
-      user_bills:userBills});
+      user_bills: userBills,
+    });
   } catch (err) {
     console.log(err);
     return res
@@ -628,5 +640,6 @@ module.exports = {
   getUploadedFiles,
   download,
   getUserExistingBill,
+  getNewBill,
   getPaymentHistory,
 };

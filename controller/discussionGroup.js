@@ -14,9 +14,9 @@ String.prototype.toProperCase = function () {
 };
 
 const createGroup = async (req, res, next) => {
-  // console.log(req.userData.role)
-  //  if(req.userData.role === "user") return next(HttpError("Invalid Credentials, could not log you in", 403));
-  //  return res.status(403).json({message: "You are unauthorized for this operation"})
+ 
+     if(req.userData.role === "user") return next(HttpError("You are unauthorized for this operation", 403));
+
   const errors = validationResult(req);
 
   if (!errors.isEmpty()) {

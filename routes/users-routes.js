@@ -29,8 +29,8 @@ router.post(
     check("license_status")
       .not()
       .isEmpty()
-      .withMessage("Your Lincense Status is Required"),
-    check("regulator").not().isEmpty().withMessage("Regulator is Required"),
+      .withMessage("Your License Status is Required"),
+    
     check("sector").not().isEmpty().withMessage("Fintech Sector is Required"),
   ],
   userController.signup
@@ -92,7 +92,7 @@ router.get("/get-files/:uid",userController.getUploadedFiles);
 router.get("/get-file/:id",userController.getSingleFile);
 
 router.get("/download/:id",userController.download);
-router.get("/existing-bills", auth,userController.getUserExistingBill )
+router.get("/new-bills", auth,userController.getNewBill)
 router.get("/existing-bills", auth,userController.getUserExistingBill )
 router.get("/payment-history", auth,userController.getPaymentHistory )
 

@@ -12,7 +12,7 @@ const router = express.Router();
 router.get("/", auth, discussionController.getAllGroup);
 
 router.post(
-  "/",
+  "/",auth,
   [
     check("name")
       .not()
