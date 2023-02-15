@@ -28,13 +28,13 @@ module.exports = {
       socket.on("disconnect", () => {
         console.log(`${socket.user.username} went off`);
       });
-      socket.on("joinRoom", ({ chatroomId }) => {
-        socket.join(chatroomId);
-        console.log(`${socket.user.username} join the ${chatroomId}`);
+      socket.on("joinRoom", ( groupId ) => {
+        socket.join(groupId);
+        console.log(`${socket.user.username} join the ${groupId}`);
       });
-      socket.on("leaveRoom", ({ chatroomId }) => {
-        socket.leave(chatroomId);
-        console.log(`${socket.user.username} left the ${chatroomId}`);
+      socket.on("leaveRoom", ( groupId ) => {
+        socket.leave(groupId);
+        console.log(`${socket.user.username} left the ${groupId}`);
       });
     });
   },

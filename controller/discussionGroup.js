@@ -14,8 +14,8 @@ String.prototype.toProperCase = function () {
 };
 
 const createGroup = async (req, res, next) => {
- 
-     if(req.userData.role === "user") return next(HttpError("You are unauthorized for this operation", 403));
+  if (req.userData.role === "user")
+    return next(HttpError("You are unauthorized for this operation", 403));
 
   const errors = validationResult(req);
 
@@ -41,7 +41,24 @@ const createGroup = async (req, res, next) => {
     name: caseName,
   });
 
-  await discussionGroup.save();
+  discussionGroup
+    .save()
+    .then(async (group) => {
+      const users = await User.find({});
+      if (users) {
+        users.forEach((user) => {
+          user.unjoined_groups.push(group);
+          user.save();
+        });
+      }
+    })
+    .catch((err) => {
+      console.log(err);
+      return res.json({
+        message:
+          "Something went wrong, Discusson group could not be created, Please try again",
+      });
+    });
 
   res.json({
     message: "Discussion Group created!",
@@ -61,13 +78,14 @@ const JoinGroup = async (req, res) => {
 
   const user = await User.findOne({ _id: req.userData.userId });
 
-  const getU = await User.findOne({ _id: user.id, groups: gId });
+  const getU = await User.findOne({ _id: user.id, joined_groups: gId });
   if (getU) return res.json({ message: "You are already in this group" });
 
   const group = await DiscussionGroup.findById(gId);
   if (!group) return res.status(404).json({ message: "Invalid Group" });
 
-  user.groups.push(group);
+  user.unjoined_groups.pull(group);
+  user.joined_groups.push(group);
   user.save();
 
   group.users.push(user);
@@ -79,14 +97,18 @@ const JoinGroup = async (req, res) => {
 };
 
 const getUserGroups = async (req, res) => {
-  let user
+  let user;
   try {
-     user = await User.findOne(
+    user = await User.findOne(
       { _id: req.userData.userId },
-      "first_name last_name groups"
+      "first_name last_name joined_groups unjoined_groups"
     )
       .populate({
-        path: "groups",
+        path: "joined_groups",
+        select: "name ",
+      })
+      .populate({
+        path: "unjoined_groups",
         select: "name ",
       })
       .exec();
@@ -97,7 +119,6 @@ const getUserGroups = async (req, res) => {
   }
 
   res.json(user);
-
 };
 
 const sendMessage = async (req, res) => {

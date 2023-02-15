@@ -62,7 +62,12 @@ const userSchema = new Schema({
     type: Schema.Types.ObjectId,
     ref: "Bill",
   }],
-  groups:[{
+  unjoined_groups:[{
+    type: Schema.Types.ObjectId,
+    ref: "DiscussionGroup",
+  }
+  ],
+  joined_groups:[{
     type: Schema.Types.ObjectId,
     ref: "DiscussionGroup",
   }
