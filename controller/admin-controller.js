@@ -112,7 +112,7 @@ const getAllUploadedFiles = async (req, res, next) => {
 
   const cursor = bucket.find({});
   const filesMetadata = await cursor.toArray();
-  if (!filesMetadata.length) return res.json({ err: "No a File was found" });
+  if (!filesMetadata.length) return res.json({ message: "No a File was found" });
 
   res.json(filesMetadata);
 };
@@ -139,17 +139,17 @@ const createBills = async (req, res, next) => {
     if (!isValidObjectId(individual))
       return res.status(404).json({ message: "Invalid userId" });
     try {
-      existingUser = await User.findById(individual);
+      existingUser = await User.findOne({_id:individual,isVerified: true });
     } catch (err) {
-      return res.status(500).json({ message: " Signing Up Failed" });
+      return res.status(500).json({ message: " Something went wrong. Please try again" });
     }
 
     if (!existingUser)
-      return res.status(422).json({ message: "User not found" });
+      return res.status(422).json({ message: `User with id ${individual} not found or user is Unlicensed` });
   }
 
   if (group) {
-    groupUsers = await User.find({ license_status: group });
+    groupUsers = await User.find({ license_status: group , isVerified: true });
   }
   const checkUser = existingUser ? existingUser.id : null;
 
