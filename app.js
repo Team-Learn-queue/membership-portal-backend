@@ -7,6 +7,7 @@ const usersRoutes = require("./routes/users-routes");
 const adminRoutes = require("./routes/admin-routes");
 const discussionRoutes = require("./routes/discussion");
 const HttpError = require("./models/http-error")
+// "multer": "1.4.4-lts.1",
 
 
 const app = express();
