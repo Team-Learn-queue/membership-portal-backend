@@ -62,7 +62,7 @@ mongoose
         credentials: true,
       },
 
-      pingTimeout: 60000,
+      // pingTimeout: 60000,
     });
   })
   .catch((err) => {
