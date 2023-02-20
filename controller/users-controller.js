@@ -503,6 +503,23 @@ const getSingleFile = async (req, res) => {
   }
 };
 
+const preview = async (req,res) => {
+  if (!isValidObjectId(req.params.id))
+    return res.status(404).json({ message: "Invalid file-Id" });
+    try {
+      const _id = mongoose.Types.ObjectId(req.params.id);
+      const cursor = bucket.find({ _id });
+      const filesMetadata = await cursor.toArray();
+  
+      bucket.openDownloadStream(_id).pipe(res);
+
+     
+     
+    } catch (err) {
+      res.json({ err: `Error: ${err.message}` });
+    }
+}
+
 const download = async (req, res) => {
   if (!isValidObjectId(req.params.id))
     return res.status(404).json({ message: "Invalid file-Id" });
@@ -665,4 +682,5 @@ module.exports = {
   getUserExistingBill,
   getNewBill,
   getPaymentHistory,
+  preview
 };

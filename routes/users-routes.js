@@ -74,6 +74,8 @@ router.patch("/edit-profile", auth, userController.editProfile);
 
 router.get("/get-files", auth, userController.getUploadedFiles);
 router.get("/get-downloaded-files", auth, userController.getDownloadedFiles);
+router.get("/preview/:id", userController.preview);
+
 router.get("/download/:id", auth, userController.download);
 
 
