@@ -145,11 +145,16 @@ const createBills = async (req, res, next) => {
     }
 
     if (!existingUser)
-      return res.status(422).json({ message: `User with id ${individual} not found or user is Unlicensed` });
+      return res.status(422).json({ message: `User with id ${individual} not found or user is yet to be verified` });
   }
 
-  if (group) {
-    groupUsers = await User.find({ license_status: group , isVerified: true });
+  try {
+    if (group) {
+      groupUsers = await User.find({ license_status: group , isVerified: true });
+    }
+  }
+  catch (err) {
+    return res.status(500).json({ message: " Something went wrong. Please try again", error: err });
   }
   const checkUser = existingUser ? existingUser.id : null;
 

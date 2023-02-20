@@ -6,9 +6,8 @@ const path = require("path");
 const usersRoutes = require("./routes/users-routes");
 const adminRoutes = require("./routes/admin-routes");
 const discussionRoutes = require("./routes/discussion");
-const HttpError = require("./models/http-error")
+const HttpError = require("./models/http-error");
 // "multer": "1.4.4-lts.1",
-
 
 const app = express();
 app.use(express.json());
@@ -34,7 +33,7 @@ app.use("/api/discussion", discussionRoutes.router);
 app.use((req, res, next) => {
   return res
     .status(404)
-    .json({ message: "Page not found.. This route couldn't be found!" }); 
+    .json({ message: "Page not found.. This route couldn't be found!" });
 });
 
 app.use((error, req, res, next) => {
@@ -62,17 +61,18 @@ mongoose
         allowedHeaders: ["my-custom-header"],
         credentials: true,
       },
+
+      // pingTimeout: 60000,
     });
   })
   .catch((err) => {
     console.log(err);
   });
 
-
-  // "error": {
-  //   "errors": {
-  //       "regulator": {
-  //           "name": "ValidatorError",
-  //           "message": "CN is not an option",
-  //           "properties": {
-  //               "message": "CN is not an option",
+// "error": {
+//   "errors": {
+//       "regulator": {
+//           "name": "ValidatorError",
+//           "message": "CN is not an option",
+//           "properties": {
+//               "message": "CN is not an option",
