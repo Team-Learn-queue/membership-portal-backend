@@ -1,10 +1,8 @@
 const express = require("express");
 const { check } = require("express-validator");
-const multer = require("multer");
 
 const userController = require("../controller/users-controller");
 const { isResetTokenValid } = require("../middleware/user");
-const fileUpload = require("../middleware/file-upload");
 const auth = require("../middleware/auth")
 
 const router = express.Router();
@@ -73,25 +71,13 @@ router.post(
 router.get("/get-user", auth, userController.getLoggedUser); 
 
 router.patch("/edit-profile", auth, userController.editProfile); 
-router.post("/upload", auth, function (req, res, next) {
-  fileUpload(req, res, function (err) {
-    if (err instanceof multer.MulterError) {
-      return res.status(400).json({
-        message: "Something went wrong, The field name should be upload and  Files should not be more than 5",
-      });
-    } else if (err) {
-      return res.status(400).json({
-        message: "Something went wrong, Please try again.",
-      });
-    }
 
-    next()
-  });
-} , userController.upload);
-router.get("/get-files/:uid",userController.getUploadedFiles);
-router.get("/get-file/:id",userController.getSingleFile);
+router.get("/get-files", auth, userController.getUploadedFiles);
+router.get("/get-downloaded-files", auth, userController.getDownloadedFiles);
+router.get("/download/:id", auth, userController.download);
 
-router.get("/download/:id",userController.download);
+
+
 router.get("/new-bills", auth,userController.getNewBill)
 router.get("/existing-bills", auth,userController.getUserExistingBill )
 router.get("/payment-history", auth,userController.getPaymentHistory )

@@ -72,6 +72,12 @@ const userSchema = new Schema({
     ref: "DiscussionGroup",
   }
   ],
+  downloaded_files:[{
+    _id: false,
+    uploadDate: { type: Date },
+    filename: { type: String},
+  }
+  ],
   isVerified: {
     type: Boolean,
      default: false 

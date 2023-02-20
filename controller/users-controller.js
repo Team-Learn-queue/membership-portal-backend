@@ -66,8 +66,10 @@ const signup = async (req, res) => {
   //     .status(422)
   //     .json({ message: "Couldn't create User, Please Try Again", e: err });
   // }
-  let confirmStatus
-  license_status === "Unlicensed"? confirmStatus = null : confirmStatus = regulator
+  let confirmStatus;
+  license_status === "Unlicensed"
+    ? (confirmStatus = null)
+    : (confirmStatus = regulator);
 
   const user = User({
     first_name,
@@ -77,7 +79,7 @@ const signup = async (req, res) => {
     password,
     company,
     license_status,
-    regulator : confirmStatus,
+    regulator: confirmStatus,
     sector,
     dob,
   });
@@ -480,21 +482,10 @@ const editProfile = async (req, res) => {
     .json({ message: " Your profile has been sucessfully edited" });
 };
 
-const upload = async (req, res) => {
-  if (req.fileValidationError) {
-    return res.status(422).json({ message: req.fileValidationError });
-  }
-  if (!req.files || req.files.length <= 0)
-    return res.status(422).json({ message: "No Image Provided" });
-  // if (!isValidObjectId(req.userData.userId))
-  //   return res.status(404).json({ message: "Invalid UserId" });
-
-  res.status(201).json({ message: "File Uploaded Sucessfully" });
-};
-
 const getUploadedFiles = async (req, res) => {
-  const cursor = bucket.find({ "metadata.uploadedBy": req.params.uid });
-  if (!cursor) return res.status(404).json({ message: "User not found" });
+  const cursor = bucket.find({});
+  if (!cursor)
+    return res.status(404).json({ message: "Unauthorized operation" });
   const filesMetadata = await cursor.toArray();
   res.json(filesMetadata);
 };
@@ -532,10 +523,42 @@ const download = async (req, res) => {
 
     if (!filesMetadata.length) return res.json({ err: "Not a File!" });
     // You can simply stream a file like this with its id
-    bucket.openDownloadStream(_id).pipe(res);
+    let user;
+
+    user = await User.findById(req.userData.userId);
+    if (!user) return res.status(401).json({ message: "No user found" });
+    user.downloaded_files.push({
+      filename: filesMetadata[0].filename,
+      uploadDate: filesMetadata[0].uploadDate,
+    });
+    user
+      .save()
+      .then(() => {
+        bucket.openDownloadStream(_id).pipe(res);
+      })
+      .catch((err) => {
+        console.log(err);
+        return res
+          .status(401)
+          .json({ message: "Something went wrong, please try again" });
+      });
   } catch (err) {
     res.json({ err: `Error: ${err.message}` });
   }
+};
+
+const getDownloadedFiles = async (req, res) => {
+  let user;
+  try {
+    user = await User.findById(req.userData.userId, "downloaded_files");
+  } catch (err) {
+    console.log(err);
+    return res
+      .status(500)
+      .json({ message: "Something went wrong, Please try again" });
+  }
+
+  res.json(user);
 };
 
 const getNewBill = async (req, res) => {
@@ -636,9 +659,9 @@ module.exports = {
   resendLink,
   getLoggedUser,
   getSingleFile,
-  upload,
   getUploadedFiles,
   download,
+  getDownloadedFiles,
   getUserExistingBill,
   getNewBill,
   getPaymentHistory,

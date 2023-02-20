@@ -104,18 +104,35 @@ const allFiles = (req, res) => {
         .json({ message: "Something went wrong, Please try again", err: e });
     });
 };
-const getAllUploadedFiles = async (req, res, next) => {
+// const getUserFiles = async (req, res) => {
+//   if (req.userData.role === "user")
+//   return res
+//     .status(403)
+//     .json({ message: "You are unauthorized for this operation" });
+//   const cursor = bucket.find({ "metadata.uploadedBy": req.params.uid });
+//   if (!cursor) return res.status(404).json({ message: "User not found" });
+//   const filesMetadata = await cursor.toArray();
+//   res.json(filesMetadata);
+// };
+
+const upload = async (req, res) => {
   if (req.userData.role === "user")
     return res
       .status(403)
       .json({ message: "You are unauthorized for this operation" });
+  if (req.fileValidationError) {
+    return res.status(422).json({ message: req.fileValidationError });
+  }
+  if (!req.files || req.files.length <= 0)
+    return res.status(422).json({ message: "No Image Provided" });
+  // if (!isValidObjectId(req.userData.userId))
+  //   return res.status(404).json({ message: "Invalid UserId" });
 
-  const cursor = bucket.find({});
-  const filesMetadata = await cursor.toArray();
-  if (!filesMetadata.length) return res.json({ message: "No a File was found" });
-
-  res.json(filesMetadata);
+  res.status(201).json({ message: "File Uploaded Sucessfully" });
 };
+
+
+
 
 const createBills = async (req, res, next) => {
   if(req.userData.role === "user") return next(HttpError("You are unauthorized for this operation", 403));
@@ -245,7 +262,7 @@ module.exports = {
   getUsers,
   getUser,
   exportData,
-  getAllUploadedFiles,
+  upload,
   createBills,
   getExistingBill,
   getPaymentReport

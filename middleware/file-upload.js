@@ -19,10 +19,10 @@ const storage = new GridFsStorage({
     filename: `${file.originalname}_${Date.now()}`, // Override the default filename
     bucketName: "resources", // Override the default bucket name (fs)
     chunkSize: 500000, // Override the default chunk size (255KB)
-    metadata: {
-      uploadedBy: req.userData.userId,
-      username: req.userData.username,
-    }, // Attach any metadata to the uploaded file
+    // metadata: {
+    //   uploadedBy: req.userData.userId,
+    //   username: req.userData.username,
+    // }, // Attach any metadata to the uploaded file
   }),
 });
 const fileUpload = multer({
