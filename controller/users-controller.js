@@ -547,6 +547,7 @@ const download = async (req, res) => {
     user.downloaded_files.push({
       filename: filesMetadata[0].filename,
       uploadDate: filesMetadata[0].uploadDate,
+      contentType: filesMetadata[0].contentType,
     });
     user
       .save()
