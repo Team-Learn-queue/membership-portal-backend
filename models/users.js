@@ -76,6 +76,7 @@ const userSchema = new Schema({
     _id: false,
     uploadDate: { type: Date },
     filename: { type: String},
+    contentType: { type: String},
   }
   ],
   isVerified: {

@@ -1,10 +1,12 @@
 const { validationResult } = require("express-validator");
 const jwt = require("jsonwebtoken");
-
+var mongo = require('mongodb');
+var Grid = require('gridfs-stream');
 const { isValidObjectId } = require("mongoose");
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 const crypto = require("crypto");
+
 
 const User = require("../models/users");
 const VerificationToken = require("../models/verificationToken");
@@ -21,12 +23,16 @@ const {
   verifiedTemplate,
 } = require("../util/email");
 
+let gfs;
+
 let bucket;
 connection.once("open", () => {
   bucket = new mongoose.mongo.GridFSBucket(connection, {
     bucketName: "resources", // Override the default bucket name (fs)
     chunkSizeBytes: 1048576, // Override the default chunk size (255KB)
   });
+  
+
 });
 // Register New USER
 const signup = async (req, res) => {
@@ -510,7 +516,8 @@ const preview = async (req,res) => {
       const _id = mongoose.Types.ObjectId(req.params.id);
       const cursor = bucket.find({ _id });
       const filesMetadata = await cursor.toArray();
-  
+      if (!filesMetadata.length) return res.json({ err: "Not a File!" });
+
       bucket.openDownloadStream(_id).pipe(res);
 
      
@@ -544,6 +551,7 @@ const download = async (req, res) => {
 
     user = await User.findById(req.userData.userId);
     if (!user) return res.status(401).json({ message: "No user found" });
+    console.log(filesMetadata[0].contentType)
     user.downloaded_files.push({
       filename: filesMetadata[0].filename,
       uploadDate: filesMetadata[0].uploadDate,
@@ -552,18 +560,24 @@ const download = async (req, res) => {
     user
       .save()
       .then(() => {
-        bucket.openDownloadStream(_id).pipe(res);
-      })
+        const readStream = bucket.openDownloadStream(_id);
+      res.set('Content-Type', 'application/octet-stream');
+      res.set('Content-Disposition', `attachment; filename="${filesMetadata[0].filename}"`);
+    
+      readStream.pipe(res);      })
       .catch((err) => {
         console.log(err);
         return res
           .status(401)
           .json({ message: "Something went wrong, please try again" });
       });
+    
+
+
   } catch (err) {
     res.json({ err: `Error: ${err.message}` });
   }
-};
+}; 
 
 const getDownloadedFiles = async (req, res) => {
   let user;
