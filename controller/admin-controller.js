@@ -73,8 +73,8 @@ const exportData = async (req, res, next) => {
         ...data.map((item) => Object.values(item.toObject())),
       ]);
 
-      fs.writeFileSync("export.csv", csvData);
-      res.download("export.csv");
+      fs.writeFileSync("users.csv", csvData);
+      res.download("users.csv");
     })
     .catch((error) => {
       res.status(500).json({ error });
@@ -222,7 +222,7 @@ const createBills = async (req, res, next) => {
 const getExistingBill = async (req, res, next) => {
   if(req.userData.role === "user") return next(HttpError("You are unauthorized for this operation", 403));
 
-  try{const bill = await Bill.find({$or:[ {'status':"unpaid"}, {'status':"dued"} ]}, "  bill_name bill_amount status mode_of_payment transaction_ref createdAt")
+  try{const bill = await Bill.find({$or:[ {'status':"unpaid"}, {'status':"dued"} ]}, "  bill_name bill_amount status createdAt")
     .populate({
       path: "individual",
       select:
@@ -258,6 +258,45 @@ const getPaymentReport = async (req, res, next) => {
 };
 
 
+const downloadPaymentReport = async (req, res, next) => {
+  if(req.userData.role === "user") return next(HttpError("You are unauthorized for this operation", 403));
+
+  try{const bill = await Bill.find({status:"paid"}, "  bill_name bill_amount status mode_of_payment transaction_ref createdAt")
+    .populate({
+      path: "individual",
+      select:
+        "first_name last_name",
+    })
+      let billArray = bill.map((b) => ({
+        Bill_Name: b.bill_name,
+        Bill_Amount: b.bill_amount,
+        Individual: `${b.individual.first_name} ${b.individual.last_name}`,
+        Status: b.status,
+        Mode_Of_Payment: b.mode_of_payment,
+        Transaction_ref: b.transaction_ref,
+        Date_Issued: b.createdAt
+ 
+      }))
+      const headers = Object.keys(billArray[0]);
+      const csvData = csv.stringify([   
+        headers,
+        ...billArray.map((item) => Object.values(item)),
+      ]);
+
+      fs.writeFileSync("payment.csv", csvData);  
+      res.download("payment.csv");
+    
+    
+
+  }
+  catch(err) {
+    console.log(err)
+     return res.status(500).json({message: "Something went wrong, Please try again"})
+  }
+};
+
+
+
 module.exports = {
   getUsers,
   getUser,
@@ -265,5 +304,6 @@ module.exports = {
   upload,
   createBills,
   getExistingBill,
-  getPaymentReport
+  getPaymentReport,
+  downloadPaymentReport 
 };

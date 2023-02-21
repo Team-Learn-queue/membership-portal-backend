@@ -561,7 +561,7 @@ const download = async (req, res) => {
       .save()
       .then(() => {
         const readStream = bucket.openDownloadStream(_id);
-      res.set('Content-Type', 'application/octet-stream');
+      res.set('Content-Type', `${filesMetadata[0].contentType}`);
       res.set('Content-Disposition', `attachment; filename="${filesMetadata[0].filename}"`);
     
       readStream.pipe(res);      })
@@ -639,7 +639,7 @@ const getUserExistingBill = async (req, res) => {
       .populate({
         path: "bills",
         select:
-          "bill_name bill_amount status mode_of_payment transaction_ref createdAt",
+          "bill_name bill_amount status createdAt",
       })
       .exec();
     const userBills = user.bills.filter(
