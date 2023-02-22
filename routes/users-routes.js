@@ -36,7 +36,7 @@ router.post(
 
 router.post("/login", userController.login);
 
-router.get("/verify/:email/:token", userController.verifyEmail);
+router.get("/verify", userController.verifyEmail);
 router.post(
   "/resend-link",
   [

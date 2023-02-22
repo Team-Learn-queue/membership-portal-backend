@@ -101,11 +101,11 @@ const signup = async (req, res) => {
       });
 
       token.save().then(() => {
-        const emailLink = `http://${req.headers.host}/api/users/verify/${user.email}/${randomBytes}`;
+        const emailLink = `http://localhost:3000/verify?email=${user.email}&token=${randomBytes}`;
         const mailOptions = verifyEmailTemplate(user, emailLink);
 
         transporter.sendMail(mailOptions, (error, info) => {
-          if (error) {
+          if (error) { 
             return res
               .status(500)
               .json({ message: "Error sending email", error });
@@ -195,32 +195,35 @@ const login = async (req, res, next) => {
 
 // Verification of Email
 const verifyEmail = async (req, res) => {
+
   let existingUser;
   let token;
   try {
-    token = await VerificationToken.findOne({ token: req.params.token });
+    token = await VerificationToken.findOne({ token: req.query.token });
   } catch (err) {
     return res
       .status(500)
-      .send("<h1>Verification Of Email Failed. Please Try again</h1>");
+      .json({message :' Verification Of Email Failed. Please Try again'});
   }
 
   if (!token)
     return res
       .status(401)
-      .send(
-        "<h1>Your verification link may have expired. Please click on resend for verify your Email </h1>"
-      );
+      .json({
+        message: "Your verification link may have expired. Please click on resend for verify your Email "
+      });
 
   try {
     existingUser = await User.findOne({
       _id: token.userId.toString(),
-      email: req.params.email,
+      email: req.query.email,
     });
   } catch (err) {
     return res
       .status(500)
-      .send("<h1>Verification Of Email Failed. Please Try again</h1>");
+      .json({
+        message: "Verification Of Email Failed. Please Try again"
+      });
   }
 
   if (!existingUser) {
@@ -231,7 +234,11 @@ const verifyEmail = async (req, res) => {
   } else if (existingUser.isVerified) {
     await VerificationToken.findByIdAndDelete(token._id);
 
-    return res.status(201).send("<h1>User has already been verified. </h1>");
+    return res.status(201)
+    .json({
+      message:
+        "User has already been verified. ",
+    })
   } else {
     existingUser.isVerified = true;
     await VerificationToken.findByIdAndDelete(token._id);
@@ -254,12 +261,15 @@ const verifyEmail = async (req, res) => {
         });
         return res
           .status(200)
-          .send(
-            `<h1> ${user.first_name} ${user.last_name}, your email has been sucessfully verified, Please go and Login </h1>`
-          );
+          .json({
+            message:
+              `${user.first_name} ${user.last_name}, your email has been sucessfully verified, Please go and Login `,
+          })
+        
       })
       .catch((e) => {
-        res.status(500).send("<h1>Verification Of Email Failed</h1>");
+        res.status(500).
+        json({message:'Verification Of Email Failed'})
       });
   }
 };
@@ -296,7 +306,7 @@ const resendLink = async (req, res) => {
   token
     .save()
     .then(() => {
-      const emailLink = `http://${req.headers.host}/api/users/verify/${user.email}/${randomBytes}`;
+      const emailLink = `http://localhost:3000/verify?email=${user.email}&token=${randomBytes}`;
       const mailOptions = verifyEmailTemplate(user, emailLink);
 
       transporter.sendMail(mailOptions, (error, info) => {

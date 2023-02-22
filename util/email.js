@@ -20,6 +20,10 @@ exports.transporter = nodemailer.createTransport({
     user: "riliwanademola72@gmail.com",
     pass: process.env.EMAIL_PASS,
   },
+  tls: {
+    // do not fail on invalid certs
+    rejectUnauthorized: false
+},
 });
 
 exports.verifyEmailTemplate = (user, emailLink) => ({
