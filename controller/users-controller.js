@@ -101,7 +101,7 @@ const signup = async (req, res) => {
       });
 
       token.save().then(() => {
-        const emailLink = `http://localhost:3000/verify?email=${user.email}&token=${randomBytes}`;
+        const emailLink = `http://localhost:3000/email-verification?email=${user.email}&token=${randomBytes}`;
         const mailOptions = verifyEmailTemplate(user, emailLink);
 
         transporter.sendMail(mailOptions, (error, info) => {
@@ -306,7 +306,7 @@ const resendLink = async (req, res) => {
   token
     .save()
     .then(() => {
-      const emailLink = `http://localhost:3000/verify?email=${user.email}&token=${randomBytes}`;
+      const emailLink = `http://localhost:3000/email-verification?email=${user.email}&token=${randomBytes}`;
       const mailOptions = verifyEmailTemplate(user, emailLink);
 
       transporter.sendMail(mailOptions, (error, info) => {
