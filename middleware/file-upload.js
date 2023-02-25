@@ -1,5 +1,8 @@
 const multer = require("multer");
 const mongoose = require("mongoose");
+const crypto = require('crypto');
+const path = require('path');
+
 const dotenv = require("dotenv");
 const { GridFsStorage } = require("multer-gridfs-storage");
 dotenv.config();
@@ -16,13 +19,15 @@ const connection = mongoose.connection
 const storage = new GridFsStorage({
   db: connection,
   file: (req, file) => ({
-    filename: `${file.originalname}_${Date.now()}`, // Override the default filename
+    // filename: `${file.originalname}_${Date.now()}`, // Override the default filename
+
+    filename: file.originalname, // Override the default filename
     bucketName: "resources", // Override the default bucket name (fs)
     chunkSize: 500000, // Override the default chunk size (255KB)
-    metadata: {
-      uploadedBy: req.userData.userId,
-      username: req.userData.username,
-    }, // Attach any metadata to the uploaded file
+    // metadata: {
+    //   uploadedBy: req.userData.userId,
+    //   username: req.userData.username,  
+    // }, // Attach any metadata to the uploaded file
   }),
 });
 const fileUpload = multer({

@@ -17,16 +17,17 @@ router.post(
     check("name")
       .not()
       .isEmpty()
+      .withMessage("Name of Discussion Group is Required")
       .isLength({ min: 6 })
       .withMessage("Name of Discussion Group is Required with minimum of 6 characters"),
   ],
-  auth,
   discussionController.createGroup
 ); // add auth
 router.post(
   "/send-message/:gId",
-  [check("message").not().isEmpty().withMessage("Message Field is Empty")],
   auth,
+  [check("message").not().isEmpty().withMessage("Message Field is Empty")],
+
   discussionController.sendMessage
 );
 router.get("/get-group/:gId", auth, discussionController.getGroup);
