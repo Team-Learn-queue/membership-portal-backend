@@ -1,10 +1,12 @@
 const { validationResult } = require("express-validator");
 const jwt = require("jsonwebtoken");
-
+var mongo = require('mongodb');
+var Grid = require('gridfs-stream');
 const { isValidObjectId } = require("mongoose");
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 const crypto = require("crypto");
+
 
 const User = require("../models/users");
 const VerificationToken = require("../models/verificationToken");
@@ -21,12 +23,16 @@ const {
   verifiedTemplate,
 } = require("../util/email");
 
+let gfs;
+
 let bucket;
 connection.once("open", () => {
   bucket = new mongoose.mongo.GridFSBucket(connection, {
     bucketName: "resources", // Override the default bucket name (fs)
     chunkSizeBytes: 1048576, // Override the default chunk size (255KB)
   });
+  
+
 });
 // Register New USER
 const signup = async (req, res) => {
@@ -66,8 +72,10 @@ const signup = async (req, res) => {
   //     .status(422)
   //     .json({ message: "Couldn't create User, Please Try Again", e: err });
   // }
-  let confirmStatus
-  license_status === "Unlicensed"? confirmStatus = null : confirmStatus = regulator
+  let confirmStatus;
+  license_status === "Unlicensed"
+    ? (confirmStatus = null)
+    : (confirmStatus = regulator);
 
   const user = User({
     first_name,
@@ -77,7 +85,7 @@ const signup = async (req, res) => {
     password,
     company,
     license_status,
-    regulator : confirmStatus,
+    regulator: confirmStatus,
     sector,
     dob,
   });
@@ -93,11 +101,11 @@ const signup = async (req, res) => {
       });
 
       token.save().then(() => {
-        const emailLink = `http://${req.headers.host}/api/users/verify/${user.email}/${randomBytes}`;
+        const emailLink = `http://localhost:3000/email-verification?email=${user.email}&token=${randomBytes}`;
         const mailOptions = verifyEmailTemplate(user, emailLink);
 
         transporter.sendMail(mailOptions, (error, info) => {
-          if (error) {
+          if (error) { 
             return res
               .status(500)
               .json({ message: "Error sending email", error });
@@ -187,32 +195,35 @@ const login = async (req, res, next) => {
 
 // Verification of Email
 const verifyEmail = async (req, res) => {
+
   let existingUser;
   let token;
   try {
-    token = await VerificationToken.findOne({ token: req.params.token });
+    token = await VerificationToken.findOne({ token: req.query.token });
   } catch (err) {
     return res
       .status(500)
-      .send("<h1>Verification Of Email Failed. Please Try again</h1>");
+      .json({message :' Verification Of Email Failed. Please Try again'});
   }
 
   if (!token)
     return res
       .status(401)
-      .send(
-        "<h1>Your verification link may have expired. Please click on resend for verify your Email </h1>"
-      );
+      .json({
+        message: "Your verification link may have expired. Please click on resend for verify your Email "
+      });
 
   try {
     existingUser = await User.findOne({
       _id: token.userId.toString(),
-      email: req.params.email,
+      email: req.query.email,
     });
   } catch (err) {
     return res
       .status(500)
-      .send("<h1>Verification Of Email Failed. Please Try again</h1>");
+      .json({
+        message: "Verification Of Email Failed. Please Try again"
+      });
   }
 
   if (!existingUser) {
@@ -223,7 +234,11 @@ const verifyEmail = async (req, res) => {
   } else if (existingUser.isVerified) {
     await VerificationToken.findByIdAndDelete(token._id);
 
-    return res.status(201).send("<h1>User has already been verified. </h1>");
+    return res.status(201)
+    .json({
+      message:
+        "User has already been verified. ",
+    })
   } else {
     existingUser.isVerified = true;
     await VerificationToken.findByIdAndDelete(token._id);
@@ -246,12 +261,15 @@ const verifyEmail = async (req, res) => {
         });
         return res
           .status(200)
-          .send(
-            `<h1> ${user.first_name} ${user.last_name}, your email has been sucessfully verified, Please go and Login </h1>`
-          );
+          .json({
+            message:
+              `${user.first_name} ${user.last_name}, your email has been sucessfully verified, Please go and Login `,
+          })
+        
       })
       .catch((e) => {
-        res.status(500).send("<h1>Verification Of Email Failed</h1>");
+        res.status(500).
+        json({message:'Verification Of Email Failed'})
       });
   }
 };
@@ -288,7 +306,7 @@ const resendLink = async (req, res) => {
   token
     .save()
     .then(() => {
-      const emailLink = `http://${req.headers.host}/api/users/verify/${user.email}/${randomBytes}`;
+      const emailLink = `http://localhost:3000/email-verification?email=${user.email}&token=${randomBytes}`;
       const mailOptions = verifyEmailTemplate(user, emailLink);
 
       transporter.sendMail(mailOptions, (error, info) => {
@@ -480,21 +498,10 @@ const editProfile = async (req, res) => {
     .json({ message: " Your profile has been sucessfully edited" });
 };
 
-const upload = async (req, res) => {
-  if (req.fileValidationError) {
-    return res.status(422).json({ message: req.fileValidationError });
-  }
-  if (!req.files || req.files.length <= 0)
-    return res.status(422).json({ message: "No Image Provided" });
-  // if (!isValidObjectId(req.userData.userId))
-  //   return res.status(404).json({ message: "Invalid UserId" });
-
-  res.status(201).json({ message: "File Uploaded Sucessfully" });
-};
-
 const getUploadedFiles = async (req, res) => {
-  const cursor = bucket.find({ "metadata.uploadedBy": req.params.uid });
-  if (!cursor) return res.status(404).json({ message: "User not found" });
+  const cursor = bucket.find({});
+  if (!cursor)
+    return res.status(404).json({ message: "Unauthorized operation" });
   const filesMetadata = await cursor.toArray();
   res.json(filesMetadata);
 };
@@ -511,6 +518,24 @@ const getSingleFile = async (req, res) => {
     res.json({ err: `Error: ${err.message}` });
   }
 };
+
+const preview = async (req,res) => {
+  if (!isValidObjectId(req.params.id))
+    return res.status(404).json({ message: "Invalid file-Id" });
+    try {
+      const _id = mongoose.Types.ObjectId(req.params.id);
+      const cursor = bucket.find({ _id });
+      const filesMetadata = await cursor.toArray();
+      if (!filesMetadata.length) return res.json({ err: "Not a File!" });
+
+      bucket.openDownloadStream(_id).pipe(res);
+
+     
+     
+    } catch (err) {
+      res.json({ err: `Error: ${err.message}` });
+    }
+}
 
 const download = async (req, res) => {
   if (!isValidObjectId(req.params.id))
@@ -532,10 +557,50 @@ const download = async (req, res) => {
 
     if (!filesMetadata.length) return res.json({ err: "Not a File!" });
     // You can simply stream a file like this with its id
-    bucket.openDownloadStream(_id).pipe(res);
+    let user;
+
+    user = await User.findById(req.userData.userId);
+    if (!user) return res.status(401).json({ message: "No user found" });
+    console.log(filesMetadata[0].contentType)
+    user.downloaded_files.push({
+      filename: filesMetadata[0].filename,
+      uploadDate: filesMetadata[0].uploadDate,
+      contentType: filesMetadata[0].contentType,
+    });
+    user
+      .save()
+      .then(() => {
+        const readStream = bucket.openDownloadStream(_id);
+      res.set('Content-Type', `${filesMetadata[0].contentType}`);
+      res.set('Content-Disposition', `attachment; filename="${filesMetadata[0].filename}"`);
+    
+      readStream.pipe(res);      })
+      .catch((err) => {
+        console.log(err);
+        return res
+          .status(401)
+          .json({ message: "Something went wrong, please try again" });
+      });
+    
+
+
   } catch (err) {
     res.json({ err: `Error: ${err.message}` });
   }
+}; 
+
+const getDownloadedFiles = async (req, res) => {
+  let user;
+  try {
+    user = await User.findById(req.userData.userId, "downloaded_files");
+  } catch (err) {
+    console.log(err);
+    return res
+      .status(500)
+      .json({ message: "Something went wrong, Please try again" });
+  }
+
+  res.json(user);
 };
 
 const getNewBill = async (req, res) => {
@@ -584,7 +649,7 @@ const getUserExistingBill = async (req, res) => {
       .populate({
         path: "bills",
         select:
-          "bill_name bill_amount status mode_of_payment transaction_ref createdAt",
+          "bill_name bill_amount status createdAt",
       })
       .exec();
     const userBills = user.bills.filter(
@@ -636,10 +701,11 @@ module.exports = {
   resendLink,
   getLoggedUser,
   getSingleFile,
-  upload,
   getUploadedFiles,
   download,
+  getDownloadedFiles,
   getUserExistingBill,
   getNewBill,
   getPaymentHistory,
+  preview
 };
