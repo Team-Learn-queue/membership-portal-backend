@@ -10,6 +10,8 @@ const userSchema = new Schema({
   },
   last_name: {
     type: String,
+    required: true,
+
   },
   email: {
     type: String,
@@ -30,38 +32,48 @@ const userSchema = new Schema({
     required: true,
     minLength: 6,
   },
+ 
+  address: {
+    type: String,
+    required: true
+  },
 
   dob: {
-    type: Date
+    type: Date,
+    required: true
+
     
   },
-  company: {
+  employer: {
     type: String,
     required: true,
   },
-  license_status: { 
+  membership_type: { 
     type: String,
     enum:{ 
-      values: ['Licensed', 'Unlicensed'],
+      values: ['Student', 'Graduate', 'Corporate'],
        message: '{VALUE} is not an option'
       },
     
   },
-  regulator: {
-    type: String,
-    enum: {
-      values: ['CBN','PENCOM','NAICOM','SEC', null],
-      message: '{VALUE} is not an option'
-    },
-    
+  years_of_exp: {
+    type: Number
   },
-  sector: [{
-    type: String,
-  }],
-  bills:[ {
+  // regulator: {
+  //   type: String,
+  //   enum: {
+  //     values: ['CBN','PENCOM','NAICOM','SEC', null],
+  //     message: '{VALUE} is not an option'
+  //   },
+    
+  // },
+  // sector: [{
+  //   type: String,
+  // }],
+  bills: {
     type: Schema.Types.ObjectId,
     ref: "Bill",
-  }],
+  },
   unjoined_groups:[{
     type: Schema.Types.ObjectId,
     ref: "DiscussionGroup",

@@ -54,11 +54,11 @@ const getUser = (req, res, next) => {
     " email first_name last_name phone_number company isVerified role sector dob"
   )
     .then((user) => {
-      if (!user) return res.status(401).json({ message: "No user found" });
+      if (!user) return res.status(404).json({ message: "No user found" });
       return res.status(201).json(user);
     })
     .catch(() => {
-      return res.status(404).json({ message: "Invalid id" });
+      return res.status(500).json({ message: "Something went wrong , Please try again" });
     });
 };
 
@@ -141,12 +141,12 @@ const createBills = async (req, res, next) => {
 
   if (!errors.isEmpty()) {
     const message = errors.errors[0].msg;
-    return res.status(500).json({ message: message });
+    return res.status(400).json({ message: message });
   }
   let existingUser;
   let groupUsers;
 
-  const { bill_name, bill_amount, bill_type, duration, individual, group } =
+  const { bill_name, bill_amount, individual, group } =
     req.body;
 
   if (!individual && !group)
@@ -154,7 +154,7 @@ const createBills = async (req, res, next) => {
 
   if (individual) {
     if (!isValidObjectId(individual))
-      return res.status(404).json({ message: "Invalid userId" });
+      return res.status(404).json({ message: "User not found" });
     try {
       existingUser = await User.findOne({_id:individual,isVerified: true });
     } catch (err) {
@@ -167,7 +167,7 @@ const createBills = async (req, res, next) => {
 
   try {
     if (group) {
-      groupUsers = await User.find({ license_status: group , isVerified: true });
+      groupUsers = await User.find({ membership_type: group , isVerified: true });
     }
   }
   catch (err) {
@@ -179,8 +179,6 @@ const createBills = async (req, res, next) => {
     const bill = Bill({
       bill_name,
       bill_amount,
-      bill_type,
-      duration,
       individual: checkUser,
     });
     try {
@@ -188,7 +186,7 @@ const createBills = async (req, res, next) => {
     } catch (err) {
       return res.json({ message: "Something went wrong", e: err });
     }
-    existingUser.bills.push(bill);
+    existingUser.bills = bill;
     await existingUser.save();
   }
   if (group && groupUsers.length > 0) {
@@ -197,16 +195,15 @@ const createBills = async (req, res, next) => {
         const bill = Bill({
           bill_name,
           bill_amount,
-          bill_type,
-          duration,
+        
           individual: user.id,
         });
         let b = await bill.save();
-        user.bills.push(b);
+        user.bills =b;
         user.save();
       });
       await Promise.all(promises);
-    } catch (e) {
+    } catch (e) {  
       return res
         .status(500)
         .json({ message: "Error in assigning bills to group", err: e });
@@ -218,6 +215,27 @@ const createBills = async (req, res, next) => {
 
   res.status(201).json({ message: "Bill assigned sucessfully" });
 };
+
+const updateBill = async(req,res,next) => {
+  if(req.userData.role === "user") return next(HttpError("You are unauthorized for this operation", 403));
+  try {
+    const { id } = req.params;
+    const bill = await Bill.findById(id);
+    if (!bill) {
+      return res.status(404).json({ error: 'Bill not found' });
+    }
+    if (bill.status === "paid") {
+      return res.status(400).json({ error: 'Bill already paid' });
+    }
+    bill.status = "paid";
+    bill.validUntil = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
+    await bill.save();
+    res.json(bill);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+
+}
 
 const getExistingBill = async (req, res, next) => {
   if(req.userData.role === "user") return next(HttpError("You are unauthorized for this operation", 403));
@@ -305,5 +323,6 @@ module.exports = {
   createBills,
   getExistingBill,
   getPaymentReport,
+  updateBill,
   downloadPaymentReport 
 };
