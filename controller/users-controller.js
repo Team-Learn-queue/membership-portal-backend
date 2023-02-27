@@ -653,7 +653,6 @@ const userBills = async (req, res) => {
           "bill_name bill_amount status createdAt",
       })
       .exec();
-    
     res.json(user);
   } catch (err) {
     console.log(err);
@@ -663,21 +662,12 @@ const userBills = async (req, res) => {
   }
 };
 
-const getBill = async (req, res) => {
-  // let user
-  //  try {
-  //   user = await User.findById(req.userData.userId)
-  //  }
-  //  catch (err) {
-  //   res.status(500).json({ error: err.message });
-  // }
-
-
-  // if(us)
-
-  try {
+const getCert = async (req, res) => {
+  const user = await User.findById(req.userData.userId)
+  
+ try {
     const { id } = req.params;
-    const bill = await Bill.findById(id, "individual validUntil").populate({
+    const bill = await Bill.findById(user.bills, "individual status validUntil").populate({
       path: "individual",
       select:
         "first_name last_name membership_type ",
@@ -741,6 +731,6 @@ module.exports = {
   getDownloadedFiles,
   userBills,
   getNewBill,
-  getBill,
+  getCert,
   preview
 };

@@ -240,7 +240,7 @@ const updateBill = async(req,res,next) => {
 const getExistingBill = async (req, res, next) => {
   if(req.userData.role === "user") return next(HttpError("You are unauthorized for this operation", 403));
 
-  try{const bill = await Bill.find({$or:[ {'status':"unpaid"}, {'status':"dued"} ]}, "  bill_name bill_amount status createdAt")
+  try{const bill = await Bill.find({status:"unpaid"}, "  bill_name bill_amount status createdAt")
     .populate({
       path: "individual",
       select:
@@ -256,10 +256,10 @@ const getExistingBill = async (req, res, next) => {
   }
 };
 
-const getPaymentReport = async (req, res, next) => {
+const getPaidBills = async (req, res, next) => {
   if(req.userData.role === "user") return next(HttpError("You are unauthorized for this operation", 403));
 
-  try{const bill = await Bill.find({status:"paid"}, "  bill_name bill_amount status mode_of_payment transaction_ref createdAt")
+  try{const bill = await Bill.find({status:"paid"}, "  bill_name bill_amount status createdAt")
     .populate({
       path: "individual",
       select:
@@ -279,7 +279,7 @@ const getPaymentReport = async (req, res, next) => {
 const downloadPaymentReport = async (req, res, next) => {
   if(req.userData.role === "user") return next(HttpError("You are unauthorized for this operation", 403));
 
-  try{const bill = await Bill.find({status:"paid"}, "  bill_name bill_amount status mode_of_payment transaction_ref createdAt")
+  try{const bill = await Bill.find({status:"paid"}, "  bill_name bill_amount status createdAt")
     .populate({
       path: "individual",
       select:
@@ -322,7 +322,7 @@ module.exports = {
   upload,
   createBills,
   getExistingBill,
-  getPaymentReport,
+  getPaidBills,
   updateBill,
   downloadPaymentReport 
 };

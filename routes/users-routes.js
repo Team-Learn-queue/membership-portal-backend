@@ -99,7 +99,7 @@ router.get("/download/:id", auth, userController.download);
 
 router.get("/new-bills", auth,userController.getNewBill)
 router.get("/user-bill", auth,userController.userBills )
-router.get("/get-bills/:id", auth,userController.getBill )
+router.get("/get-cert", auth, userController.getCert )
 
 
 
