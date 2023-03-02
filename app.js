@@ -69,10 +69,96 @@ mongoose
     console.log(err);
   });
 
-// "error": {
-//   "errors": {
-//       "regulator": {
-//           "name": "ValidatorError",
-//           "message": "CN is not an option",
-//           "properties": {
-//               "message": "CN is not an option",
+
+  // const signup = async (req, res) => {
+  //   const errors = validationResult(req);
+  
+  //   if (!errors.isEmpty()) {
+  //     const message = errors.errors[0].msg;
+  //     return res.status(400).json({ message: message });
+  //   }
+  //   let first_name = req.body.name.split(" ")[0];
+  //   const last_name = req.body.name.split(" ")[1];
+  //   const {
+  //     email,
+  //     phone_number,
+  //     password,
+  //     company,
+  //     license_status,
+  //     regulator,
+  //     sector,
+  //     dob,
+  //   } = req.body;
+  //   let existingUser;
+  //   try {
+  //     existingUser = await User.findOne({ email: email });
+  //   } catch (err) {
+  //     return res.status(500).json({ message: " Signing Up Failed" });
+  //   }
+  
+  //   if (existingUser) {
+  //     return res.status(422).json({ message: "User Already Exist" });
+  //   }
+    // let hashedPassword;
+    // try {
+    //   hashedPassword = await bcrypt.hash(password, 12);
+    // } catch (err) {
+    //   return res
+    //     .status(422)
+    //     .json({ message: "Couldn't create User, Please Try Again", e: err });
+  //   // }
+  //   let confirmStatus;
+  //   license_status === "Unlicensed"
+  //     ? (confirmStatus = null)
+  //     : (confirmStatus = regulator);
+  
+  //   const user = User({
+  //     first_name,
+  //     last_name,
+  //     email,
+  //     phone_number,
+  //     password,
+  //     company,
+  //     license_status,
+  //     regulator: confirmStatus,
+  //     sector,
+  //     dob,
+  //   });
+  
+  //   user
+  //     .save()
+  //     .then((user) => {
+  //       const randomBytes = crypto.randomBytes(16).toString("hex");
+  
+  //       const token = VerificationToken({
+  //         userId: user._id,
+  //         token: randomBytes,
+  //       });
+  
+  //       token.save().then(() => {
+  //         const emailLink = `http://localhost:3000/email-verification?email=${user.email}&token=${randomBytes}`;
+  //         const mailOptions = verifyEmailTemplate(user, emailLink);
+  
+  //         transporter.sendMail(mailOptions, (error, info) => {
+  //           if (error) { 
+  //             return res
+  //               .status(500)
+  //               .json({ message: "Error sending email", error });
+  //           } else {
+  //             return res.status(201).json({
+  //               message: `${user.first_name} ${user.last_name} a confirmation email has been sent to ${user.email}`,
+  //             });
+  //           }
+  //         });
+  //       });
+  //     })
+  //     .catch((e) => {
+  //       return res
+  //         .status(500)
+  //         .json({ message: "Couldn't create User, Please Try Again", 
+          
+  //         error: e });
+  //     });
+  // };
+  
+  // "multer": "1.4.4-lts.1",
