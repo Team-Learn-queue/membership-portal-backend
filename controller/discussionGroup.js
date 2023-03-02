@@ -21,7 +21,7 @@ const createGroup = async (req, res, next) => {
 
   if (!errors.isEmpty()) {
     const message = errors.errors[0].msg;
-    return res.status(500).json({ message: message });
+    return res.status(400).json({ message: message });
   }
   const { name } = req.body;
 
@@ -60,7 +60,7 @@ const createGroup = async (req, res, next) => {
       });
     });
 
-  res.json({
+  res.status(201).json({
     message: "Discussion Group created!",
   });
 };
@@ -82,7 +82,7 @@ const JoinGroup = async (req, res) => {
   if (getU) return res.json({ message: "You are already in this group" });
 
   const group = await DiscussionGroup.findById(gId);
-  if (!group) return res.status(404).json({ message: "Invalid Group" });
+  if (!group) return res.status(404).json({ message: "Group not found" });
 
   user.unjoined_groups.pull(group);
   user.joined_groups.push(group);
@@ -158,7 +158,7 @@ const getGroup = (req, res) => {
       return res.status(201).json(group);
     })
     .catch(() => {
-      return res.status(404).json({ message: "Invalid id" });
+      return res.status(500).json({ message: "Something went wrong , Please try again" });
     });
 };
 
@@ -168,7 +168,7 @@ const getMessage = (req, res) => {
     .populate({ path: "user", select: "first_name last_name" })
 
     .then((messages) => {
-      if (!messages) return res.status(401).json({ message: "No user found" });
+      if (!messages) return res.status(404).json({ message: "No user found" });
       const data = messages.map((message) => ({
         message: message.message,
         name: `${message.user.first_name} ${message.user.last_name}`,
@@ -177,7 +177,7 @@ const getMessage = (req, res) => {
       return res.status(201).json(data);
     })
     .catch(() => {
-      return res.status(404).json({ message: "Invalid id" });
+      return res.status(500).json({ message: "Something went wrong, Please try again" });
     });
 };
 

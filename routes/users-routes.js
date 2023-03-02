@@ -10,7 +10,9 @@ const router = express.Router();
 router.post(
   "/signup", 
   [ 
-    check("name").not().isEmpty().withMessage("Enter your Fullname"),
+    check("first_name").not().isEmpty().withMessage("Firstname is required"),
+    check("last_name").not().isEmpty().withMessage("Lastname is required"),
+
     check("email")
       .normalizeEmail()
       .isEmail()
@@ -20,16 +22,31 @@ router.post(
       .isEmpty()
       .withMessage("Enter a valid phone number"),
     check("dob").not().isEmpty().withMessage("Date of Birth is Required"),
+    check("address").not().isEmpty().withMessage("Address is required"),
+
     check("password")
       .isLength({ min: 6 })
       .withMessage("Enter a password with minimum of 6 characters"),
-    check("company").not().isEmpty().withMessage("Enter your Company's name"),
-    check("license_status")
-      .not()
-      .isEmpty()
-      .withMessage("Your License Status is Required"),
+
+
+    check("confirm_password").isLength({ min: 6 }).custom((value, { req }) => {
+      if (value !== req.body.password) {
+        throw new Error('Confirm password  does not match password');
+      }
+  
+      // Indicates the success of this synchronous custom validator
+      return true;
+    }),
+    check("employer").not().isEmpty().withMessage("Employers name is required"),
+    check("years_of_exp").not().isEmpty().withMessage("Years of experience is required"),
+    check("membership_type").not().isEmpty().withMessage("Membership type is required"),
+
+    // check("license_status")
+    //   .not()
+    //   .isEmpty()
+    //   .withMessage("Your License Status is Required"),
     
-    check("sector").not().isEmpty().withMessage("Fintech Sector is Required"),
+    // check("sector").not().isEmpty().withMessage("Fintech Sector is Required"),
   ],
   userController.signup
 );
@@ -81,8 +98,8 @@ router.get("/download/:id", auth, userController.download);
 
 
 router.get("/new-bills", auth,userController.getNewBill)
-router.get("/existing-bills", auth,userController.getUserExistingBill )
-router.get("/payment-history", auth,userController.getPaymentHistory )
+router.get("/user-bill", auth,userController.userBills )
+router.get("/get-cert", auth, userController.getCert )
 
 
 
