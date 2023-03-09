@@ -1,0 +1,2 @@
+_id,individual,bill_name,bill_amount,status,mode_of_payment,transaction_ref,createdAt
+63ef5a4c4b4be2ec113cbea5,"{""_id"":""63ef41204b4be2ec113cbe0b"",""first_name"":""Oluwatobi"",""last_name"":""Abdulgafar""}",Tech Bills,2000,paid,cash,000000011223344,Fri Feb 17 2023 11:43:24 GMT+0100 (West Africa Standard Time)
