@@ -817,9 +817,9 @@ const webhook = async (req, res) => {
   const event = req.body.event;
   switch (event) {
     case 'charge.success':
-      const { reference, email } = req.body.data;
+      const { customer, channel, reference, amount } = req.body.data;
       const user = await User.findOne(
-        { email },
+        { email: customer.email },
       );
       if (!user) {
         return res
@@ -834,8 +834,10 @@ const webhook = async (req, res) => {
           .json({ message: "No bill found" });
       }
       bill.status = "paid"
+      bill.bill_amount = amount
+      bill.transaction_ref = reference
+      bill.mode_of_payment = channel
       bill.save()
-      console.log(reference)
       // Find the payment record in your database using the reference
       // Update the payment status in your database to "paid"
       break;
