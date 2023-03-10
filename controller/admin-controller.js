@@ -167,6 +167,7 @@ const createBills = async (req, res, next) => {
 
   try {
     if (group) {
+
       groupUsers = await User.find({ membership_type: group , isVerified: true });
     }
   }
@@ -326,3 +327,23 @@ module.exports = {
   updateBill,
   downloadPaymentReport 
 };
+
+
+// app.post('/bills', async (req, res) => {
+//   const { amount, billType, category, userIds } = req.body;
+  
+//   // If userIds is not provided, set the amount for all categories
+//   if (!userIds) {
+//     const students = await User.find({ category: 'student' });
+//     const graduates = await User.find({ category: 'graduate' });
+//     const corporateOrgs = await User.find({ category: 'corporate organization' });
+
+//     const studentBills = students.map(student => ({ amount, billType, category: 'student', user: student._id }));
+//     const graduateBills = graduates.map(graduate => ({ amount, billType, category: 'graduate', user: graduate._id }));
+//     const corporateOrgBills = corporateOrgs.map(corporateOrg => ({ amount, billType, category: 'corporate organization', user: corporateOrg._id }));
+
+//     const allBills = [...studentBills, ...graduateBills, ...corporateOrgBills];
+
+//     await Bill.insertMany(allBills);
+
+//     res.json({ message: 'Bills created successfully.' });

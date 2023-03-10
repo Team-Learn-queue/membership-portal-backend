@@ -1,6 +1,8 @@
 const { validationResult } = require("express-validator");
 const jwt = require("jsonwebtoken");
 var mongo = require('mongodb');
+const axios = require('axios');
+
 var Grid = require('gridfs-stream');
 const { isValidObjectId } = require("mongoose");
 const mongoose = require("mongoose");
@@ -8,6 +10,8 @@ const dotenv = require("dotenv");
 const crypto = require("crypto");
 const PDFDocument = require('pdfkit');
 const Bill = require("../models/bill");
+const Category = require("../models/category");
+
 
 const User = require("../models/users");
 const VerificationToken = require("../models/verificationToken");
@@ -35,6 +39,20 @@ connection.once("open", () => {
   
 
 });
+
+
+// let environment = process.env.NODE_ENV;
+// let url 
+// console.log(environment)
+
+// if(environment === 'development') {
+//  url = 'http://localhost:3000'
+// }else {
+//   url = 'http://localhost:3000'
+
+// }
+
+// console.log(`${url}/email-verification?e}`)
 // Register New USER
 const signup = async (req, res) => {
   const errors = validationResult(req);
@@ -103,7 +121,14 @@ const signup = async (req, res) => {
         token: randomBytes,
       });
 
-      token.save().then(() => {
+      token.save().then(async () => {
+        //  const cat = Category({
+        //   user: user._id,
+        //   category: membership_type
+
+        //  })
+        //  await cat.save()
+        
         const emailLink = `http://localhost:3000/email-verification?email=${user.email}&token=${randomBytes}`;
         const mailOptions = verifyEmailTemplate(user, emailLink);
 
@@ -200,6 +225,23 @@ const login = async (req, res, next) => {
 
 // Verification of Email
 const verifyEmail = async (req, res) => {
+   let check
+  try {
+    check = await User.findOne({
+      email: req.query.email,
+    });
+  } catch (err) {
+    return res
+      .status(500)
+      .json({
+        message: "Verification Of Email Failed. Please Try again"
+      });
+  }
+  if (check.isVerified)  return res.json({message:"User has already been verified, Please Login "})
+
+  
+
+
 
   let existingUser;
   let token;
@@ -716,6 +758,95 @@ async function generateCertificate(user) {
 }
 
 
+
+
+
+
+
+
+const paystack = axios.create({
+  baseURL: 'https://api.paystack.co',
+  headers: {
+    Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+    'Content-Type': 'application/json',
+  },
+});
+
+// "multer": "1.4.4-lts.1",
+
+
+// Route to initialize payment transaction
+
+
+const pay = async (req, res) => {
+  try {
+    const { email, amount } = req.body;
+
+    // Create Paystack payment request
+    const { data } = await paystack.post('/transaction/initialize', {
+      email,
+      amount : amount * 100,
+    });
+
+    // Return payment URL to client
+    res.json({ url: data.data.authorization_url });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+
+
+const webhook = async (req, res) => {
+  const secret = process.env.PAYSTACK_SECRET_KEY;
+  const hash = req.headers['x-paystack-signature'];
+
+  // Verify request signature
+  const hmac = crypto.createHmac('sha512', secret);
+  hmac.update(JSON.stringify(req.body));
+  const digest = hmac.digest('hex');
+  if (digest !== hash) {
+    console.error('Invalid webhook signature');
+    res.status(400).send('Invalid signature');
+    return;
+  }
+ 
+  // Perform necessary actions based on the webhook event
+  const event = req.body.event;
+  switch (event) {
+    case 'charge.success':
+      const { reference, email } = req.body.data;
+      const user = await User.findOne(
+        { email },
+      );
+      
+      const bill = await Bill.findById(user.bills)
+      bill.status = "paid"
+      bill.save()
+      console.log(reference)
+      // Find the payment record in your database using the reference
+      // Update the payment status in your database to "paid"
+      break;
+    case 'charge.failure':
+      // Handle payment failure
+      break;
+    // Handle other webhook events
+  }
+
+  // Return a 200 OK response to Paystack
+  res.status(200).send('OK');
+};
+
+
+
+
+
+
+
+
+
+
 module.exports = {
   signup,
   verifyEmail,
@@ -732,5 +863,7 @@ module.exports = {
   userBills,
   getNewBill,
   getCert,
-  preview
+  preview,
+  pay,
+  webhook
 };
