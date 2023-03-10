@@ -799,6 +799,7 @@ const pay = async (req, res) => {
 
 
 const webhook = async (req, res) => {
+  console.log(req.body)
   const secret = process.env.PAYSTACK_SECRET_KEY;
   const hash = req.headers['x-paystack-signature'];
 
@@ -820,8 +821,18 @@ const webhook = async (req, res) => {
       const user = await User.findOne(
         { email },
       );
-      
+      if (!user) {
+        return res
+          .status(404)
+          .json({ message: "No user found" });
+      }
+    
       const bill = await Bill.findById(user.bills)
+      if (!bill) {
+        return res
+          .status(404)
+          .json({ message: "No bill found" });
+      }
       bill.status = "paid"
       bill.save()
       console.log(reference)
