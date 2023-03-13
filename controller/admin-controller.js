@@ -217,26 +217,26 @@ const createBills = async (req, res, next) => {
   res.status(201).json({ message: "Bill assigned sucessfully" });
 };
 
-const updateBill = async(req,res,next) => {
-  if(req.userData.role === "user") return next(HttpError("You are unauthorized for this operation", 403));
-  try {
-    const { id } = req.params;
-    const bill = await Bill.findById(id);
-    if (!bill) {
-      return res.status(404).json({ error: 'Bill not found' });
-    }
-    if (bill.status === "paid") {
-      return res.status(400).json({ error: 'Bill already paid' });
-    }
-    bill.status = "paid";
-    bill.validUntil = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
-    await bill.save();
-    res.json(bill);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+// const updateBill = async(req,res,next) => {
+//   if(req.userData.role === "user") return next(HttpError("You are unauthorized for this operation", 403));
+//   try {
+//     const { id } = req.params;
+//     const bill = await Bill.findById(id);
+//     if (!bill) {
+//       return res.status(404).json({ error: 'Bill not found' });
+//     }
+//     if (bill.status === "paid") {
+//       return res.status(400).json({ error: 'Bill already paid' });
+//     }
+//     bill.status = "paid";
+    // bill.validUntil = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
+//     await bill.save();
+//     res.json(bill);
+//   } catch (err) {
+//     res.status(500).json({ error: err.message });
+//   }
 
-}
+// }
 
 const getExistingBill = async (req, res, next) => {
   if(req.userData.role === "user") return next(HttpError("You are unauthorized for this operation", 403));
@@ -324,7 +324,6 @@ module.exports = {
   createBills,
   getExistingBill,
   getPaidBills,
-  updateBill,
   downloadPaymentReport 
 };
 

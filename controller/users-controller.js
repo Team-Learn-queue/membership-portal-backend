@@ -1,9 +1,7 @@
 const { validationResult } = require("express-validator");
 const jwt = require("jsonwebtoken");
-var mongo = require('mongodb');
 const axios = require('axios');
 
-var Grid = require('gridfs-stream');
 const { isValidObjectId } = require("mongoose");
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
@@ -40,17 +38,25 @@ connection.once("open", () => {
 
 });
 
+const paystack = axios.create({
+  baseURL: 'https://api.paystack.co',
+  headers: {
+    Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+    'Content-Type': 'application/json',
+  },
+});
 
-// let environment = process.env.NODE_ENV;
-// let url 
-// console.log(environment)
 
-// if(environment === 'development') {
-//  url = 'http://localhost:3000'
-// }else {
-//   url = 'http://localhost:3000'
 
-// }
+let environment = process.env.NODE_ENV;
+let url 
+
+if(environment === 'development') {
+ url = 'http://localhost:3000'
+}else {
+  url = 'http://portal.anstesters.com'
+
+}
 
 // console.log(`${url}/email-verification?e}`)
 // Register New USER
@@ -129,7 +135,7 @@ const signup = async (req, res) => {
         //  })
         //  await cat.save()
         
-        const emailLink = `http://localhost:3000/email-verification?email=${user.email}&token=${randomBytes}`;
+        const emailLink = `${url}/email-verification?email=${user.email}&token=${randomBytes}`;
         const mailOptions = verifyEmailTemplate(user, emailLink);
 
         transporter.sendMail(mailOptions, (error, info) => {
@@ -351,7 +357,7 @@ const resendLink = async (req, res) => {
   token
     .save()
     .then(() => {
-      const emailLink = `http://localhost:3000/email-verification?email=${user.email}&token=${randomBytes}`;
+      const emailLink = `${url}/email-verification?email=${user.email}&token=${randomBytes}`;
       const mailOptions = verifyEmailTemplate(user, emailLink);
 
       transporter.sendMail(mailOptions, (error, info) => {
@@ -403,7 +409,7 @@ const forgotPassword = async (req, res) => {
   resetToken
     .save()
     .then(() => {
-      const resetLink = `http://localhost:3000/reset-password?userId=${user.id}&token=${token}`;
+      const resetLink = `${url}/reset-password?userId=${user.id}&token=${token}`;
       const mailOptions = forgotEmailTemplate(user, resetLink);
 
       transporter.sendMail(mailOptions, (error, info) => {
@@ -757,31 +763,26 @@ async function generateCertificate(user) {
   return pdfBuffer;
 }
 
-
-
-
-
-
-
-
-const paystack = axios.create({
-  baseURL: 'https://api.paystack.co',
-  headers: {
-    Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
-    'Content-Type': 'application/json',
-  },
-});
-
-// "multer": "1.4.4-lts.1",
-
-
-// Route to initialize payment transaction
-
-
 const pay = async (req, res) => {
   try {
     const { email, amount } = req.body;
-
+    const user = await User.findOne(
+      { email: email },
+    );
+    if (!user) {
+      return res
+        .status(404)
+        .json({ message: "No user found" });
+    }
+    const bill = await Bill.findById(user.bills)
+      if (!bill) {
+        return res
+          .status(404)
+          .json({ message: "No bill found" });
+      }
+      if (bill.status === "paid") {
+              return res.status(400).json({ error: 'Bill has already been paid' });
+            }
     // Create Paystack payment request
     const { data } = await paystack.post('/transaction/initialize', {
       email,
@@ -837,6 +838,8 @@ const webhook = async (req, res) => {
       bill.bill_amount = amount
       bill.transaction_ref = reference
       bill.mode_of_payment = channel
+      bill.validUntil = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
+
       bill.save()
       // Find the payment record in your database using the reference
       // Update the payment status in your database to "paid"
