@@ -58,6 +58,7 @@ const addEvent =  async (req,res) => {
     res.send(`event with the title ${event.NameOfEvent} is added to the calendar!`);
 
 }
+
 const getEvent =  (req,res) => {
     const {id} = req.params;
     const foundEvent = events.find((event) => event.id ===id);
@@ -68,11 +69,23 @@ const deleteEvent = (req,res) =>{
     events = events.filter((event) => event.id !== false);
     res.send(`event with the id ${id} has been deleted from the calendar!`);
 }
+const updateEvent = (req,res) => {
+  const {id} = req.params;
+  const eventIndex = events.findIndex((event) => event.id === req.params.eventId);
+  if (eventIndex !== -1) {
+    const updatedEvent = Object.assign({}, events[eventIndex], req.body);
+    events[eventIndex] = updatedEvent;
+    res.json(updatedEvent);
+  } else {
+    res.status(404).send();
+  }
+}
 
 module.exports = {
     getAllEvents,
     getEvent,
     addEvent,
+    updateEvent,
     deleteEvent
 
 }
