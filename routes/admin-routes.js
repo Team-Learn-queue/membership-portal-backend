@@ -39,7 +39,7 @@ router.post('/create-bill',auth,[
    
   ],adminController.createBills)   // Add auth middleware to identify that the user is an admin before performin the operation
   router.get('/users-bills', auth, adminController.usersBills)   // Add auth middleware to identify that the user is an admin before performin the operation
-  router.get('/user-bill/:id', auth, adminController.userBill)   // Add auth middleware to identify that the user is an admin before performin the operation
+  router.get('/get-bill/:id', auth, adminController.getBill)   // Add auth middleware to identify that the user is an admin before performin the operation
 
   
   router.get('/existing-bills', auth, adminController.getExistingBill)   // Add auth middleware to identify that the user is an admin before performin the operation

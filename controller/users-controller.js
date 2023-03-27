@@ -694,7 +694,7 @@ const userBills = async (req, res) => {
   //  await User.findOne({ _id: req.userData.userId });
   let user;
   try {
-    user = await User.find(req.userData.userId, "bills")
+    user = await User.findById(req.userData.userId, "bills")
       .populate({
         path: "bills",
         select:
@@ -715,7 +715,7 @@ const getCert = async (req, res) => {
   
  try {
     const { id } = req.params;
-    const bill = await Bill.findById(user.bills, "individual status validUntil").populate({
+    const bill = await Bill.findOne({individual: user._id, bill_name:"annual membership certificate"}, "individual status validUntil").populate({
       path: "individual",
       select:
         "first_name last_name membership_type ",
@@ -733,6 +733,7 @@ const getCert = async (req, res) => {
       return res.status(400).json({ error: 'You have not paid for certificate yet' });
 
     }
+
     const b = {
       name: `${bill.individual.first_name} ${bill.individual.last_name}`,
       validUntil: bill.validUntil,
@@ -749,10 +750,7 @@ const getCert = async (req, res) => {
 
 
 async function generateCertificate(user) {
-  // Use a PDF generation library such as pdfkit or puppeteer to create a PDF certificate
-  // Include user information such as name, category, and valid until date on the certificate
-  // Return the PDF buffer as a Promise
-  // Example using pdfkit:
+
   const doc = new PDFDocument();
   doc.fontSize(20).text('Membership Certificate');
   doc.fontSize(16).text(`Name: ${user.name}`);
@@ -845,7 +843,10 @@ const webhook = async (req, res) => {
       bill.bill_amount = amount
       bill.transaction_ref = reference
       bill.mode_of_payment = channel
-      bill.validUntil = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
+      if(bill.name === 'annual membership certificate') {
+        bill.validUntil = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
+
+      }
 
       bill.save()
       // Find the payment record in your database using the reference

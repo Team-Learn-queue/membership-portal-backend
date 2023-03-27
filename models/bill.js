@@ -8,8 +8,11 @@ const billSchema = new Schema(
       ref: "User",
     },
     bill_name: {
+      trim: true,
       type: String,
       required: true,
+      lowercase: true,
+
     },
     bill_amount: {
       type: Number,
@@ -24,11 +27,10 @@ const billSchema = new Schema(
     // },
     duration: {
       type: String,
-      enum: {
-        values: ["monthly", "quarterly", "yearly"],
-        message: "{VALUE} is not an option",
-      },
-      default: "yearly",
+      // enum: {
+      //   values: ["monthly", "quarterly", "yearly"],
+      //   message: "{VALUE} is not an option",
+      // },
     },
     status: {
       type: String,

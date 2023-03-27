@@ -247,7 +247,7 @@ const usersBills = async (req, res) => {
       .json({ message: "Something went wrong, Please try again" });
   }
 };
-const userBill = async (req, res) => {
+const getBill = async (req, res) => {
   if (req.userData.role === "user")
     return next(HttpError("You are unauthorized for this operation", 403));
 
@@ -384,7 +384,7 @@ module.exports = {
   upload,
   createBills,
   usersBills,
-  userBill,
+  getBill,
   getExistingBill,
   getPaidBills,
   downloadPaymentReport,

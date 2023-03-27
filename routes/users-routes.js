@@ -96,7 +96,7 @@ router.get("/download/:id", auth, userController.download);
 
 
 router.get("/new-bills", auth,userController.getNewBill)
-router.get("/user-bill", auth,userController.userBills )
+router.get("/user-bills", auth,userController.userBills )
 router.get("/get-cert", auth, userController.getCert )
 router.post("/pay/:billId",  auth, userController.pay )
 router.post("/webhook", userController.webhook )
