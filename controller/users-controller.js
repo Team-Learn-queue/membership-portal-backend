@@ -694,7 +694,7 @@ const userBills = async (req, res) => {
   //  await User.findOne({ _id: req.userData.userId });
   let user;
   try {
-    user = await User.findById(req.userData.userId, "bills")
+    user = await User.find(req.userData.userId, "bills")
       .populate({
         path: "bills",
         select:
@@ -728,6 +728,10 @@ const getCert = async (req, res) => {
     }
     if (bill.validUntil < Date.now()) {
       return res.status(400).json({ error: 'Certificate expired' });
+    }
+    if(!bill.name === "annual membership certificate") {
+      return res.status(400).json({ error: 'You have not paid for certificate yet' });
+
     }
     const b = {
       name: `${bill.individual.first_name} ${bill.individual.last_name}`,
@@ -765,16 +769,15 @@ async function generateCertificate(user) {
 
 const pay = async (req, res) => {
   try {
-    const { email, amount } = req.body;
-    const user = await User.findOne(
-      { email: email },
-    );
+    const { amount } = req.body;
+    const user = await User.findById(req.userData.userId)
+
     if (!user) {
       return res
         .status(404)
         .json({ message: "No user found" });
     }
-    const bill = await Bill.findById(user.bills)
+    const bill = await Bill.findOne({_id: req.params.billId, individual: user._id})
       if (!bill) {
         return res
           .status(404)
@@ -785,10 +788,11 @@ const pay = async (req, res) => {
             }
     // Create Paystack payment request
     const { data } = await paystack.post('/transaction/initialize', {
-      email,
+      email: user.email,
       amount : amount * 100,
+      billId : bill.id
     });
-
+   
     // Return payment URL to client
     res.json({ url: data.data.authorization_url });
   } catch (error) {
@@ -828,7 +832,7 @@ const webhook = async (req, res) => {
           .json({ message: "No user found" });
       }
     
-      const bill = await Bill.findById(user.bills)
+      const bill = await Bill.findOne({_id:customer.billId, individual: user._id})
       if (!bill) {
         return res
           .status(404)

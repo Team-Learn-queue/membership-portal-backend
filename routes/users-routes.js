@@ -21,7 +21,6 @@ router.post(
       .not()
       .isEmpty()
       .withMessage("Enter a valid phone number"),
-    check("dob").not().isEmpty().withMessage("Date of Birth is Required"),
     check("address").not().isEmpty().withMessage("Address is required"),
 
     check("password")
@@ -37,7 +36,6 @@ router.post(
       // Indicates the success of this synchronous custom validator
       return true;
     }),
-    check("employer").not().isEmpty().withMessage("Employers name is required"),
     check("years_of_exp").not().isEmpty().withMessage("Years of experience is required"),
     check("membership_type").not().isEmpty().withMessage("Membership type is required"),
 
@@ -100,7 +98,7 @@ router.get("/download/:id", auth, userController.download);
 router.get("/new-bills", auth,userController.getNewBill)
 router.get("/user-bill", auth,userController.userBills )
 router.get("/get-cert", auth, userController.getCert )
-router.post("/pay", userController.pay )
+router.post("/pay/:billId",  auth, userController.pay )
 router.post("/webhook", userController.webhook )
 
 

@@ -40,13 +40,11 @@ const userSchema = new Schema({
 
   dob: {
     type: Date,
-    required: true
 
     
   },
   employer: {
     type: String,
-    required: true,
   },
   membership_type: { 
     type: String,
@@ -70,10 +68,10 @@ const userSchema = new Schema({
   // sector: [{
   //   type: String,
   // }],
-  bills: {
+  bills: [{
     type: Schema.Types.ObjectId,
     ref: "Bill",
-  },
+  }],
   unjoined_groups:[{
     type: Schema.Types.ObjectId,
     ref: "DiscussionGroup",

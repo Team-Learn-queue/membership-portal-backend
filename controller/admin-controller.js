@@ -31,7 +31,8 @@ connection.once("open", () => {
 });
 const getUsers = async (req, res, next) => {
   // console.log(req.userData.role)
-   if(req.userData.role === "user") return next(HttpError("You are unauthorized for this operation", 403));
+  if (req.userData.role === "user")
+    return next(HttpError("You are unauthorized for this operation", 403));
   //  return res.status(403).json({message: "You are unauthorized for this operation"})
   User.find(
     { isVerified: true },
@@ -58,12 +59,15 @@ const getUser = (req, res, next) => {
       return res.status(201).json(user);
     })
     .catch(() => {
-      return res.status(500).json({ message: "Something went wrong , Please try again" });
+      return res
+        .status(500)
+        .json({ message: "Something went wrong , Please try again" });
     });
 };
 
 const exportData = async (req, res, next) => {
-  if(req.userData.role === "user") return next(HttpError("You are unauthorized for this operation", 403));
+  if (req.userData.role === "user")
+    return next(HttpError("You are unauthorized for this operation", 403));
 
   User.find({}, "-__v")
     .then((data) => {
@@ -131,11 +135,9 @@ const upload = async (req, res) => {
   res.status(201).json({ message: "File Uploaded Sucessfully" });
 };
 
-
-
-
 const createBills = async (req, res, next) => {
-  if(req.userData.role === "user") return next(HttpError("You are unauthorized for this operation", 403));
+  if (req.userData.role === "user")
+    return next(HttpError("You are unauthorized for this operation", 403));
 
   const errors = validationResult(req);
 
@@ -146,8 +148,7 @@ const createBills = async (req, res, next) => {
   let existingUser;
   let groupUsers;
 
-  const { bill_name, bill_amount, individual, group } =
-    req.body;
+  const { bill_name, bill_amount, individual, group } = req.body;
 
   if (!individual && !group)
     return res.json({ message: "Bill is not assigned to anyone." });
@@ -156,23 +157,32 @@ const createBills = async (req, res, next) => {
     if (!isValidObjectId(individual))
       return res.status(404).json({ message: "User not found" });
     try {
-      existingUser = await User.findOne({_id:individual,isVerified: true });
+      existingUser = await User.findOne({ _id: individual, isVerified: true });
     } catch (err) {
-      return res.status(500).json({ message: " Something went wrong. Please try again" });
+      return res
+        .status(500)
+        .json({ message: " Something went wrong. Please try again" });
     }
 
     if (!existingUser)
-      return res.status(422).json({ message: `User with id ${individual} not found or user is yet to be verified` });
+      return res
+        .status(422)
+        .json({
+          message: `User with id ${individual} not found or user is yet to be verified`,
+        });
   }
 
   try {
     if (group) {
-
-      groupUsers = await User.find({ membership_type: group , isVerified: true });
+      groupUsers = await User.find({
+        membership_type: group,
+        isVerified: true,
+      });
     }
-  }
-  catch (err) {
-    return res.status(500).json({ message: " Something went wrong. Please try again", error: err });
+  } catch (err) {
+    return res
+      .status(500)
+      .json({ message: " Something went wrong. Please try again", error: err });
   }
   const checkUser = existingUser ? existingUser.id : null;
 
@@ -187,7 +197,7 @@ const createBills = async (req, res, next) => {
     } catch (err) {
       return res.json({ message: "Something went wrong", e: err });
     }
-    existingUser.bills = bill;
+    existingUser.bills.push(bill)
     await existingUser.save();
   }
   if (group && groupUsers.length > 0) {
@@ -196,15 +206,15 @@ const createBills = async (req, res, next) => {
         const bill = Bill({
           bill_name,
           bill_amount,
-        
+
           individual: user.id,
         });
         let b = await bill.save();
-        user.bills =b;
+        user.bills.push(b);
         user.save();
       });
       await Promise.all(promises);
-    } catch (e) {  
+    } catch (e) {
       return res
         .status(500)
         .json({ message: "Error in assigning bills to group", err: e });
@@ -215,6 +225,52 @@ const createBills = async (req, res, next) => {
     return res.json({ message: "Bill is not assigned to anyone!." });
 
   res.status(201).json({ message: "Bill assigned sucessfully" });
+};
+const usersBills = async (req, res) => {
+  if (req.userData.role === "user")
+    return next(HttpError("You are unauthorized for this operation", 403));
+  try {
+    const bills = await Bill.find(
+      {},
+      "  bill_name bill_amount status createdAt"
+    )
+      .populate({
+        path: "individual",
+        select: "first_name last_name ",
+      })
+      .exec();
+    res.json(bills);
+  } catch (err) {
+    console.log(err);
+    return res
+      .status(500)
+      .json({ message: "Something went wrong, Please try again" });
+  }
+};
+const userBill = async (req, res) => {
+  if (req.userData.role === "user")
+    return next(HttpError("You are unauthorized for this operation", 403));
+
+  try {
+    const bill = await Bill.findById(
+      req.params.id,
+      "  bill_name bill_amount status createdAt"
+    )
+      .populate({
+        path: "individual",
+        select: "first_name last_name ",
+      })
+      .exec();
+    if (!bill) {
+      return res.status(404).json({ error: "Bill not found" });
+    }
+    res.json(bill);
+  } catch (err) {
+    console.log(err);
+    return res
+      .status(500)
+      .json({ message: "Something went wrong, Please try again" });
+  }
 };
 
 // const updateBill = async(req,res,next) => {
@@ -229,7 +285,7 @@ const createBills = async (req, res, next) => {
 //       return res.status(400).json({ error: 'Bill already paid' });
 //     }
 //     bill.status = "paid";
-    // bill.validUntil = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
+// bill.validUntil = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
 //     await bill.save();
 //     res.json(bill);
 //   } catch (err) {
@@ -239,82 +295,87 @@ const createBills = async (req, res, next) => {
 // }
 
 const getExistingBill = async (req, res, next) => {
-  if(req.userData.role === "user") return next(HttpError("You are unauthorized for this operation", 403));
+  if (req.userData.role === "user")
+    return next(HttpError("You are unauthorized for this operation", 403));
 
-  try{const bill = await Bill.find({status:"unpaid"}, "  bill_name bill_amount status createdAt")
-    .populate({
-      path: "individual",
-      select:
-        "first_name last_name ",
-    })
-    .exec();
+  try {
+    const bill = await Bill.find(
+      { status: "unpaid" },
+      "  bill_name bill_amount status createdAt"
+    )
+      .populate({
+        path: "individual",
+        select: "first_name last_name ",
+      })
+      .exec();
     res.json(bill);
-
-  }
-  catch(err) {
-    console.log(err)
-     return res.status(500).json({message: "Something went wrong, Please try again"})
+  } catch (err) {
+    console.log(err);
+    return res
+      .status(500)
+      .json({ message: "Something went wrong, Please try again" });
   }
 };
 
 const getPaidBills = async (req, res, next) => {
-  if(req.userData.role === "user") return next(HttpError("You are unauthorized for this operation", 403));
+  if (req.userData.role === "user")
+    return next(HttpError("You are unauthorized for this operation", 403));
 
-  try{const bill = await Bill.find({status:"paid"}, "  bill_name bill_amount status createdAt")
-    .populate({
-      path: "individual",
-      select:
-        "first_name last_name ",
-    })
-    .exec();
+  try {
+    const bill = await Bill.find(
+      { status: "paid" },
+      "  bill_name bill_amount status createdAt"
+    )
+      .populate({
+        path: "individual",
+        select: "first_name last_name ",
+      })
+      .exec();
     res.json(bill);
-
-  }
-  catch(err) {
-    console.log(err)
-     return res.status(500).json({message: "Something went wrong, Please try again"})
+  } catch (err) {
+    console.log(err);
+    return res
+      .status(500)
+      .json({ message: "Something went wrong, Please try again" });
   }
 };
-
 
 const downloadPaymentReport = async (req, res, next) => {
-  if(req.userData.role === "user") return next(HttpError("You are unauthorized for this operation", 403));
+  if (req.userData.role === "user")
+    return next(HttpError("You are unauthorized for this operation", 403));
 
-  try{const bill = await Bill.find({status:"paid"}, "  bill_name bill_amount status createdAt")
-    .populate({
+  try {
+    const bill = await Bill.find(
+      { status: "paid" },
+      "  bill_name bill_amount status createdAt"
+    ).populate({
       path: "individual",
-      select:
-        "first_name last_name",
-    })
-      let billArray = bill.map((b) => ({
-        Bill_Name: b.bill_name,
-        Bill_Amount: b.bill_amount,
-        Individual: `${b.individual.first_name} ${b.individual.last_name}`,
-        Status: b.status,
-        Mode_Of_Payment: b.mode_of_payment,
-        Transaction_ref: b.transaction_ref,
-        Date_Issued: b.createdAt
- 
-      }))
-      const headers = Object.keys(billArray[0]);
-      const csvData = csv.stringify([   
-        headers,
-        ...billArray.map((item) => Object.values(item)),
-      ]);
+      select: "first_name last_name",
+    });
+    let billArray = bill.map((b) => ({
+      Bill_Name: b.bill_name,
+      Bill_Amount: b.bill_amount,
+      Individual: `${b.individual.first_name} ${b.individual.last_name}`,
+      Status: b.status,
+      Mode_Of_Payment: b.mode_of_payment,
+      Transaction_ref: b.transaction_ref,
+      Date_Issued: b.createdAt,
+    }));
+    const headers = Object.keys(billArray[0]);
+    const csvData = csv.stringify([
+      headers,
+      ...billArray.map((item) => Object.values(item)),
+    ]);
 
-      fs.writeFileSync("payment.csv", csvData);  
-      res.download("payment.csv");
-    
-    
-
-  }
-  catch(err) {
-    console.log(err)
-     return res.status(500).json({message: "Something went wrong, Please try again"})
+    fs.writeFileSync("payment.csv", csvData);
+    res.download("payment.csv");
+  } catch (err) {
+    console.log(err);
+    return res
+      .status(500)
+      .json({ message: "Something went wrong, Please try again" });
   }
 };
-
-
 
 module.exports = {
   getUsers,
@@ -322,15 +383,16 @@ module.exports = {
   exportData,
   upload,
   createBills,
+  usersBills,
+  userBill,
   getExistingBill,
   getPaidBills,
-  downloadPaymentReport 
+  downloadPaymentReport,
 };
-
 
 // app.post('/bills', async (req, res) => {
 //   const { amount, billType, category, userIds } = req.body;
-  
+
 //   // If userIds is not provided, set the amount for all categories
 //   if (!userIds) {
 //     const students = await User.find({ category: 'student' });
