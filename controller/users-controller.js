@@ -790,7 +790,10 @@ const pay = async (req, res) => {
     const { data } = await paystack.post('/transaction/initialize', {
       email: user.email,
       amount : amount * 100,
-      billId : bill.id
+      metadata: {
+        billId: bill.id
+      }
+      
     });
    
     // Return payment URL to client
@@ -832,7 +835,7 @@ const webhook = async (req, res) => {
           .json({ message: "No user found" });
       }
     
-      const bill = await Bill.findOne({_id:customer.billId, individual: user._id})
+      const bill = await Bill.findOne({_id: req.body.data.metadata.billId, individual: user._id})
       if (!bill) {
         return res
           .status(404)
