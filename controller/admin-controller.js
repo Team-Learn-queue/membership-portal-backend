@@ -174,8 +174,9 @@ const createBills = async (req, res, next) => {
 
   try {
     if (group) {
+      
       groupUsers = await User.find({
-        membership_type: group,
+        membership_type: {$in: group},
         isVerified: true,
       });
     }
