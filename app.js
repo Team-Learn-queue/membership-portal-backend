@@ -51,18 +51,19 @@ app.use((error, req, res, next) => {
   res.status(error.code || 500);
   res.json({ message: error.message || "Unknown Error" });
 });
-
 mongoose
   .connect(
-    `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.zchdj.mongodb.net/${process.env.DB_NAME}?retryWrites=true&w=majority`,
+    `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.ebjfjt7.mongodb.net/${process.env.DB_NAME}?retryWrites=true&w=majority`,
     {
       useNewUrlParser: true,
       maxPoolSize: 5,
+
     }
   )
 
+
   .then(() => {
-    const server = app.listen(process.env.PORT || 8000);
+    const server = app.listen(process.env.PORT || 8080);
     const io = require("./socket").init(server, {
       cors: {
         origin:  url,

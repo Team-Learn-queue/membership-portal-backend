@@ -36,7 +36,7 @@ const getUsers = async (req, res, next) => {
   //  return res.status(403).json({message: "You are unauthorized for this operation"})
   User.find(
     { isVerified: true },
-    " email first_name last_name phone_number company isVerified role sector dob"
+    " -__v"
   )
     .then((users) => {
       return res.status(200).json({ users });

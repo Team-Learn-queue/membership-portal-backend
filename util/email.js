@@ -27,7 +27,7 @@ exports.transporter = nodemailer.createTransport({
 });
 
 exports.verifyEmailTemplate = (user, emailLink) => ({
-  from: "FintechCEO <riliwanademola72@gmail.com>",
+  from: "ANSTESTERS <riliwanademola72@gmail.com>",
   to: user.email,
   subject: "We are thrilled to have you with us",
   html: `<html>
@@ -55,14 +55,10 @@ exports.verifyEmailTemplate = (user, emailLink) => ({
     text-align: center;
   "
 >
-  <img
-    style="width: 150px"
-    src="https://ceoforum.netlify.app/assets/img/logo.png"
-    alt="fintech ceo's forum"
-  />
+ 
   <p style="margin-top: 20px;font-family: 'Poppins';">Hello ${user.first_name} ${user.last_name},</p>
   <p style="margin-top: 20px;font-family: 'Poppins';">
-    Thank you for joining Fintech Ceo's Forum, We are glad to have you.
+    Thank you for joining ANSTESTERS , We are glad to have you.
   </p>
   <div style="margin-top: 70px">
     <a
@@ -91,7 +87,7 @@ exports.verifyEmailTemplate = (user, emailLink) => ({
 });
 
 exports.forgotEmailTemplate = (user, resetLink) => ({
-  from: "FintechCEO <riliwanademola72@gmail.com>",
+  from: "ANSTESTERS <riliwanademola72@gmail.com>",
   to: user.email,
   subject: "Password Reset",
   html: `<html>
@@ -110,12 +106,7 @@ exports.forgotEmailTemplate = (user, resetLink) => ({
     text-align: center;
   "
 >
-    <img
-    style="width: 150px"
-
-      src="https://ceoforum.netlify.app/assets/img/logo.png"
-      alt="fintech ceo's forum"
-    />
+    
     <p style="margin-top: 20px">You requested a Password Reset</p>
     <p style="margin-top: 20px">Please click on the link and follow the process.</p>
     <div style="margin-top: 70px">
@@ -144,7 +135,7 @@ exports.forgotEmailTemplate = (user, resetLink) => ({
 });
 
 exports.passwordSetTemplate = (user) => ({
-  from: "FintechCEO <riliwanademola72@gmail.com>",
+  from: "ANSTESTERS <riliwanademola72@gmail.com>",
   to: user.email,
   subject: "Password Reset Sucessfully",
   html: `<html>
@@ -163,12 +154,7 @@ exports.passwordSetTemplate = (user) => ({
     text-align: center;
   "
 >
-    <img
-    style="width: 150px"
-
-      src="https://ceoforum.netlify.app/assets/img/logo.png"
-      alt="fintech ceo's forum"
-    />
+   
     <p style="margin-top: 20px">You Password has been reset sucessfully</p>
     <p style="margin-top: 20px">Now you can login with your new password</p>
 
@@ -181,7 +167,7 @@ exports.passwordSetTemplate = (user) => ({
 
 
 exports.verifiedTemplate = (user) => ({
-  from: "FintechCEO <riliwanademola72@gmail.com>",
+  from: "ANSTESTERS <riliwanademola72@gmail.com>",
   to: user.email,
   subject: "Email verified sucessfully",
   html: `<html>
@@ -200,13 +186,8 @@ exports.verifiedTemplate = (user) => ({
     text-align: center;
   "
 >
-    <img
-    style="width: 150px"
-
-      src="https://ceoforum.netlify.app/assets/img/logo.png"
-      alt="fintech ceo's forum"
-    />
-    <p style="margin-top: 20px"> ${user.first_name}, You welcome to FintechCEO Forum</p>
+   
+    <p style="margin-top: 20px"> ${user.first_name}, You welcome to ANSTESTERS Forum</p>
     <p style="margin-top: 20px">Thank you for connecting with us.</p>
 
     </div>

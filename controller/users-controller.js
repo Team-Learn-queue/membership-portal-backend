@@ -314,7 +314,7 @@ const verifyEmail = async (req, res) => {
           .status(200)
           .json({
             message:
-              `${user.first_name} ${user.last_name}, your email has been sucessfully verified, Please go and Login `,
+              `${user.first_name} ${user.last_name}, You have sucessfully verified your email, you can login.`,
           })
         
       })
@@ -515,7 +515,7 @@ const editProfile = async (req, res) => {
     const message = errors.errors[0].msg;
     return res.status(400).json({ message: message });
   }
-  const { first_name, last_name, email, phone_number, organization, dob } =
+  const { first_name, last_name, phone_number, address, membership_type, employer, years_of_exp } =
     req.body;
 
   let editedUser;
@@ -524,12 +524,7 @@ const editProfile = async (req, res) => {
       req.userData.userId,
       {
         $set: {
-          first_name,
-          last_name,
-          email,
-          phone_number,
-          company: organization,
-          dob,
+          first_name, last_name, phone_number, address,membership_type,employer,years_of_exp
         },
       },
       { new: true }

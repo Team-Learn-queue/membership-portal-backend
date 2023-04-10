@@ -77,7 +77,9 @@ const JoinGroup = async (req, res) => {
     return res.status(404).json({ message: "Invalid group Id" });
 
   const user = await User.findOne({ _id: req.userData.userId });
-
+  if (!user) {
+    return res.status(404).json({ message: "User not found" });
+  }
   const getU = await User.findOne({ _id: user.id, joined_groups: gId });
   if (getU) return res.json({ message: "You are already in this group" });
 
@@ -164,6 +166,9 @@ const getGroup = (req, res) => {
 
 const getMessage = (req, res) => {
   const groupId = req.params.gId.replace(/\s+/g, " ").trim();
+  if (!groupId) {
+    return res.status(404).json({ message: "Group not found" });
+  }
   Message.find({ discussionGroup: groupId }, "-discussionGroup")
     .populate({ path: "user", select: "first_name last_name" })
 
@@ -176,7 +181,8 @@ const getMessage = (req, res) => {
       }));
       return res.status(201).json(data);
     })
-    .catch(() => {
+    .catch((e) => {
+      console.log(e)
       return res.status(500).json({ message: "Something went wrong, Please try again" });
     });
 };
