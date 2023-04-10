@@ -44,4 +44,12 @@ router.post('/create-bill',auth,[
   router.get('/download-report', auth, adminController.downloadPaymentReport)   // Add auth middleware to identify that the user is an admin before performin the operation
 
 
+
+  //for the routes
+router.get('/events', auth, adminController.getAllEvents);
+router.get('/event/:id', auth, adminController.getEvent);
+router.post('/event', auth, adminController.addEvent);
+router.put('/event/:id', auth, adminController.updateEvent); 
+router.delete('/event/:id', auth,  adminController.deleteEvent); 
+
 exports.router = router

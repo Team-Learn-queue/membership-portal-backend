@@ -6,8 +6,7 @@ const path = require("path");
 const usersRoutes = require("./routes/users-routes");
 const adminRoutes = require("./routes/admin-routes");
 const discussionRoutes = require("./routes/discussion");
-const eventsRoutes = require("./routes/events-routes");
-const eventsURoutes = require("./routes/events-user");
+
 
 const HttpError = require("./models/http-error");
 // "multer": "1.4.4-lts.1",
@@ -32,8 +31,7 @@ app.use((req, res, next) => {
 app.use("/api/users", usersRoutes.router);
 app.use("/api/admin", adminRoutes.router);
 app.use("/api/discussion", discussionRoutes.router);
-app.use("/api/events-admin", eventsRoutes.router);
-app.use("/api/events-user", eventsURoutes.router);
+
 
 app.use((req, res, next) => {
   return res

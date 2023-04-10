@@ -10,6 +10,7 @@ const PDFDocument = require('pdfkit');
 const Bill = require("../models/bill");
 
 const User = require("../models/users");
+const Event = require("../models/events");
 const VerificationToken = require("../models/verificationToken");
 const ResetToken = require("../models/resetToken");
 dotenv.config();
@@ -714,7 +715,23 @@ async function generateCertificate(user) {
   });
   return pdfBuffer;
 }
+//For the user to control the events the admin added to their calendar
+const getAllEvents = async (req, res) =>{
+  const events = await Event.find({event_id: req.event.id});
+  res.status(200).json(events);
+}
 
+const getEvent = async (req, res) => {
+try {
+const FoundEvent = await Event.findById(req.params.event)
+res.status(200).json(FoundEvent);
+} catch (err) {
+console.log(err);
+return res
+  .status(500)
+  .json({ message: "Event not found" });
+}
+};
 
 module.exports = {
   signup,
@@ -732,5 +749,8 @@ module.exports = {
   userBills,
   getNewBill,
   getCert,
-  preview
+  preview,
+  getEvent,
+  getAllEvents
 };
+

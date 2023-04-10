@@ -4,6 +4,8 @@ const { check } = require("express-validator");
 const userController = require("../controller/users-controller");
 const { isResetTokenValid } = require("../middleware/user");
 const auth = require("../middleware/auth")
+//for the user to be able to edit their events meeting
+//const eventsController = require("../controller/events-controller");
 
 const router = express.Router();
 
@@ -97,11 +99,16 @@ router.get("/download/:id", auth, userController.download);
 
 
 
-router.get("/new-bills", auth,userController.getNewBill)
-router.get("/user-bill", auth,userController.userBills )
+router.get("/new-bills", auth, userController.getNewBill)
+router.get("/user-bill", auth, userController.userBills )
 router.get("/get-cert", auth, userController.getCert )
 
+//for the events
+//this is for the user.
+//user wont be able to access some features like update and all.
 
+router.get('/events', auth, userController.getAllEvents);
+router.get('/event/:id', auth, userController.getEvent);
 
 
 // router.post(

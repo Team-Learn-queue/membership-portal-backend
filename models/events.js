@@ -1,8 +1,12 @@
 const mongoose = require("mongoose");
-const router = require('../routes/events-routes');
 const Schema = mongoose.Schema;
 
 const EventsSchema = new Schema({
+    event_id:{
+        type: mongoose.Schema.Types.ObjectId,
+        required: true,
+        ref: "Event",
+    },
     NameofEvent:{
         type: String,
         required: true,
@@ -20,12 +24,12 @@ const EventsSchema = new Schema({
     },
     
     Date:{
-        type: Date 
+        type: Date,
+        required: true, 
 
     },
-    
-    Time:{
-       
+    attending:{
+        type: Boolean,
 
     },
     setReminder:{

@@ -1,11 +1,13 @@
 const User = require("../models/users");
 const Bill = require("../models/bill");
+const Event = require("../models/events");
 const fs = require("fs");
 const csv = require("csv-string");
 const auth = require("../middleware/auth");
 // const { isValidObjectId } = require("mongoose");
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
+
 const { validationResult } = require("express-validator");
 // const jwt = require("jsonwebtoken");
 // const Fs = require("fs");
@@ -313,6 +315,68 @@ const downloadPaymentReport = async (req, res, next) => {
   }
 };
 
+//For the admin to be able to add events for the user
+const getAllEvents = async (req, res) =>{
+  const events = await Event.find({event_id: req.event.id});
+  res.status(200).json(events);
+}
+
+const getEvent = async (req, res) => {
+try {
+const FoundEvent = await Event.findById(req.params.event)
+res.status(200).json(FoundEvent);
+} catch (err) {
+console.log(err);
+return res
+  .status(500)
+  .json({ message: "Event not found" });
+}
+};
+
+
+const addEvent =  async (req,res) => {
+const event = await req.body;
+const events = Event({
+  NameofEvent,
+  Members,
+  Venue,
+  Date,
+  Attending,
+  Time,
+  setReminder,
+
+
+});
+const eventwithId = ({ ...event, id});
+events.push(eventwithId);
+res.status(200).json({message:`event with the title ${event.NameOfEvent} is added to the calendar!`});
+
+}
+
+
+const deleteEvent = async (req,res) =>{
+try{
+  const event = await Event.findByIdAndDelete(req.params.id);
+  Event.remove(event);
+  res.status(200).json({message: `event with the id ${id} has been deleted from the calendar!`});
+
+}catch(err){
+  res.status(404).json({message: "Event not found"});
+}
+}
+
+const updateEvent = async (req,res) => {
+
+const {id} = req.params;
+const eventIndex = await events.findIndex((event) => event.id === req.params.eventId);
+if (eventIndex !== -1) {
+const updatedEvent = Object.assign({}, events[eventIndex], req.body);
+events[eventIndex] = updatedEvent;
+res.json(updatedEvent);
+} else {
+res.status(404).json({message: "event not found"});
+}
+}
 
 
 module.exports = {
@@ -324,5 +388,11 @@ module.exports = {
   getExistingBill,
   getPaidBills,
   updateBill,
-  downloadPaymentReport 
+  downloadPaymentReport ,
+  getAllEvents,
+  getEvent,
+  addEvent,
+  updateEvent,
+  deleteEvent
+
 };
