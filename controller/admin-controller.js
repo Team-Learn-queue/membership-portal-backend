@@ -317,7 +317,7 @@ const downloadPaymentReport = async (req, res, next) => {
 
 //For the admin to be able to add events for the user
 const getAllEvents = async (req, res) =>{
-  const events = await Event.find({event_id: req.event.id});
+  const events = await Event.find({ });
   res.status(200).json(events);
 }
 

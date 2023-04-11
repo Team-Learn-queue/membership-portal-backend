@@ -2,11 +2,11 @@ const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
 const EventsSchema = new Schema({
-    event_id:{
-        type: mongoose.Schema.Types.ObjectId,
-        required: true,
-        ref: "Event",
-    },
+    // event_id:{
+    //     type: mongoose.Schema.Types.ObjectId,
+    //     required: true,
+    //     ref: "Event",
+    // },
     NameofEvent:{
         type: String,
         required: true,
