@@ -21,7 +21,7 @@ router.post(
       .not()
       .isEmpty()
       .withMessage("Enter a valid phone number"),
-    check("address").not().isEmpty().withMessage("Address is required"),
+    
 
     check("password")
       .isLength({ min: 6 })
@@ -33,18 +33,11 @@ router.post(
         throw new Error('Confirm password  does not match password');
       }
   
-      // Indicates the success of this synchronous custom validator
       return true;
     }),
     check("years_of_exp").not().isEmpty().withMessage("Years of experience is required"),
     check("membership_type").not().isEmpty().withMessage("Membership type is required"),
 
-    // check("license_status")
-    //   .not()
-    //   .isEmpty()
-    //   .withMessage("Your License Status is Required"),
-    
-    // check("sector").not().isEmpty().withMessage("Fintech Sector is Required"),
   ],
   userController.signup
 );

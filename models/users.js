@@ -56,17 +56,7 @@ const userSchema = new Schema({
   years_of_exp: {
     type: Number
   },
-  // regulator: {
-  //   type: String,
-  //   enum: {
-  //     values: ['CBN','PENCOM','NAICOM','SEC', null],
-  //     message: '{VALUE} is not an option'
-  //   },
-    
-  // },
-  // sector: [{
-  //   type: String,
-  // }],
+  
   bills: [{
     type: Schema.Types.ObjectId,
     ref: "Bill",
@@ -75,7 +65,7 @@ const userSchema = new Schema({
     type: Schema.Types.ObjectId,
     ref: "DiscussionGroup",
   }
-  ],
+  ], 
   joined_groups:[{
     type: Schema.Types.ObjectId,
     ref: "DiscussionGroup",
