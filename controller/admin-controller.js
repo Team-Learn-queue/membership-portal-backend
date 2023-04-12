@@ -38,8 +38,7 @@ const getUsers = async (req, res, next) => {
 const getUser = (req, res, next) => {
   const userId = req.params.uid.replace(/\s+/g, " ").trim();
   User.findById(
-    userId,
-    " email first_name last_name phone_number company isVerified role sector dob"
+    userId
   )
     .then((user) => {
       if (!user) return res.status(404).json({ message: "No user found" });
@@ -56,7 +55,7 @@ const exportData = async (req, res, next) => {
   if (req.userData.role === "user")
     return next(HttpError("You are unauthorized for this operation", 403));
 
-  User.find({}, "-__v")
+  User.find({}, "first_name last_name address phone_number employer years_of_exp membership_type role email")
     .then((data) => {
       const headers = Object.keys(data[0].toObject());
       const csvData = csv.stringify([
