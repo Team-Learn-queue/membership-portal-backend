@@ -1,15 +1,15 @@
 const { validationResult } = require("express-validator");
 const jwt = require("jsonwebtoken");
-const axios = require('axios');
+const axios = require("axios");
+const Event = require("../models/event");
 
 const { isValidObjectId } = require("mongoose");
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 const crypto = require("crypto");
-const PDFDocument = require('pdfkit');
+const PDFDocument = require("pdfkit");
 const Bill = require("../models/bill");
 const Category = require("../models/category");
-
 
 const User = require("../models/users");
 const VerificationToken = require("../models/verificationToken");
@@ -31,35 +31,28 @@ let gfs;
 let bucket;
 connection.once("open", () => {
   bucket = new mongoose.mongo.GridFSBucket(connection, {
-    bucketName: "resources", // Override the default bucket name (fs)
-    chunkSizeBytes: 1048576, // Override the default chunk size (255KB)
+    bucketName: "resources",
+    chunkSizeBytes: 1048576,
   });
-  
-
 });
 
 const paystack = axios.create({
-  baseURL: 'https://api.paystack.co',
+  baseURL: "https://api.paystack.co",
   headers: {
     Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
 });
 
-
-
 let environment = process.env.NODE_ENV;
-let url 
+let url;
 
-if(environment === 'development') {
- url = 'http://localhost:3000'
-}else {
-  url = 'http://portal.anstesters.com'
-
+if (environment === "development") {
+  url = "http://localhost:3000";
+} else {
+  url = "http://portal.anstesters.com";
 }
 
-// console.log(`${url}/email-verification?e}`)
-// Register New USER
 const signup = async (req, res) => {
   const errors = validationResult(req);
 
@@ -67,7 +60,7 @@ const signup = async (req, res) => {
     const message = errors.errors[0].msg;
     return res.status(400).json({ message: message });
   }
-  
+
   const {
     first_name,
     last_name,
@@ -79,7 +72,7 @@ const signup = async (req, res) => {
     dob,
     address,
     years_of_exp,
-    membership_type
+    membership_type,
   } = req.body;
   let existingUser;
   try {
@@ -114,7 +107,7 @@ const signup = async (req, res) => {
     dob,
     address,
     years_of_exp,
-    membership_type
+    membership_type,
   });
 
   user
@@ -128,18 +121,11 @@ const signup = async (req, res) => {
       });
 
       token.save().then(async () => {
-        //  const cat = Category({
-        //   user: user._id,
-        //   category: membership_type
-
-        //  })
-        //  await cat.save()
-        
         const emailLink = `${url}/email-verification?email=${user.email}&token=${randomBytes}`;
         const mailOptions = verifyEmailTemplate(user, emailLink);
 
         transporter.sendMail(mailOptions, (error, info) => {
-          if (error) { 
+          if (error) {
             return res
               .status(500)
               .json({ message: "Error sending email", error });
@@ -152,11 +138,11 @@ const signup = async (req, res) => {
       });
     })
     .catch((e) => {
-      return res
-        .status(500)
-        .json({ message: "Couldn't create User, Please Try Again", 
-        
-        error: e });
+      return res.status(500).json({
+        message: "Couldn't create User, Please Try Again",
+
+        error: e,
+      });
     });
 };
 
@@ -191,7 +177,9 @@ const login = async (req, res, next) => {
   } catch (err) {
     return res
       .status(500)
-      .json({ message: "Something went wrong, could not log you in. Please try again" });
+      .json({
+        message: "Something went wrong, could not log you in. Please try again",
+      });
   }
 
   if (!isValidPassword) {
@@ -231,23 +219,20 @@ const login = async (req, res, next) => {
 
 // Verification of Email
 const verifyEmail = async (req, res) => {
-   let check
+  let check;
   try {
     check = await User.findOne({
       email: req.query.email,
     });
   } catch (err) {
-    return res
-      .status(500)
-      .json({
-        message: "Verification Of Email Failed. Please Try again"
-      });
+    return res.status(500).json({
+      message: "Verification Of Email Failed. Please Try again",
+    });
   }
-  if (check.isVerified)  return res.json({message:"User has already been verified, Please Login "})
-
-  
-
-
+  if (check.isVerified)
+    return res.json({
+      message: "User has already been verified, Please Login ",
+    });
 
   let existingUser;
   let token;
@@ -256,15 +241,14 @@ const verifyEmail = async (req, res) => {
   } catch (err) {
     return res
       .status(500)
-      .json({message :' Verification Of Email Failed. Please Try again'});
+      .json({ message: " Verification Of Email Failed. Please Try again" });
   }
 
   if (!token)
-    return res
-      .status(403)
-      .json({
-        message: "Your verification link may have expired. Please click on resend for verify your Email "
-      });
+    return res.status(403).json({
+      message:
+        "Your verification link may have expired. Please click on resend for verify your Email ",
+    });
 
   try {
     existingUser = await User.findOne({
@@ -272,25 +256,21 @@ const verifyEmail = async (req, res) => {
       email: req.query.email,
     });
   } catch (err) {
-    return res
-      .status(500)
-      .json({
-        message: "Verification Of Email Failed. Please Try again"
-      });
+    return res.status(500).json({
+      message: "Verification Of Email Failed. Please Try again",
+    });
   }
 
   if (!existingUser) {
     return res.status(404).json({
-      message:
-        "User not found. ",
+      message: "User not found. ",
     });
   } else if (existingUser.isVerified) {
     await VerificationToken.findByIdAndDelete(token._id);
 
     return res.json({
-      message:
-        "User has already been verified. ",
-    })
+      message: "User has already been verified. ",
+    });
   } else {
     existingUser.isVerified = true;
     await VerificationToken.findByIdAndDelete(token._id);
@@ -302,25 +282,21 @@ const verifyEmail = async (req, res) => {
           if (error) {
             return res
               .status(500)
-              .json({ message: "Error sending email", error }); }
+              .json({ message: "Error sending email", error });
+          }
           // } else {
           //   return res.status(201).json({
           //     message: `${user.first_name} ${user.last_name} a verification email has been sent to ${user.email}`,
-            
+
           //   });
           // }
         });
-        return res
-          .status(200)
-          .json({
-            message:
-              `${user.first_name} ${user.last_name}, You have sucessfully verified your email, you can login.`,
-          })
-        
+        return res.status(200).json({
+          message: `${user.first_name} ${user.last_name}, You have sucessfully verified your email, you can login.`,
+        });
       })
       .catch((e) => {
-        res.status(500).
-        json({message:'Verification Of Email Failed'})
+        res.status(500).json({ message: "Verification Of Email Failed" });
       });
   }
 };
@@ -452,17 +428,6 @@ const resetPassword = async (req, res) => {
     return res.status(404).json({ message: "User not found" });
   }
 
-  // let hashedPassword;
-  // try {
-  //   hashedPassword = await bcrypt.hash(newPassword, 12);
-  // } catch (err) {
-  //   return res
-  //     .status(422)
-  //     .json({ message: "Couldn't create User, Please Try Again", e: err });
-  // }
-
-  // user.password = hashedPassword;
-
   const samePass = await user.comparePassword(newPassword);
   if (samePass)
     return res.status(403).json({
@@ -483,7 +448,7 @@ const resetPassword = async (req, res) => {
               .json({ message: "Error sending email", error });
           } else {
             return res.status(200).json({
-              message: `${user.first_name} ${user.last_name} your password has been resetted sucessfully`,
+              message: `${user.first_name} ${user.last_name} your password has been reset sucessfully`,
             });
           }
         });
@@ -498,13 +463,18 @@ const resetPassword = async (req, res) => {
 
 const getLoggedUser = (req, res) => {
   const userId = req.userData.userId;
-  User.findById(userId, " email first_name last_name phone_number company  dob")
+  User.findById(
+    userId,
+    " first_name last_name address phone_number employer years_of_exp membership_type"
+  )
     .then((user) => {
       if (!user) return res.status(404).json({ message: "No user found" });
       return res.status(200).json(user);
     })
     .catch(() => {
-      return res.status(500).json({ message: "Someting went wrong!.. please try again." });
+      return res
+        .status(500)
+        .json({ message: "Someting went wrong!.. please try again." });
     });
 };
 
@@ -515,8 +485,15 @@ const editProfile = async (req, res) => {
     const message = errors.errors[0].msg;
     return res.status(400).json({ message: message });
   }
-  const { first_name, last_name, phone_number, address, membership_type, employer, years_of_exp } =
-    req.body;
+  const {
+    first_name,
+    last_name,
+    phone_number,
+    address,
+    membership_type,
+    employer,
+    years_of_exp,
+  } = req.body;
 
   let editedUser;
   try {
@@ -524,7 +501,13 @@ const editProfile = async (req, res) => {
       req.userData.userId,
       {
         $set: {
-          first_name, last_name, phone_number, address,membership_type,employer,years_of_exp
+          first_name,
+          last_name,
+          phone_number,
+          address,
+          membership_type,
+          employer,
+          years_of_exp,
         },
       },
       { new: true }
@@ -564,49 +547,38 @@ const getSingleFile = async (req, res) => {
   }
 };
 
-const preview = async (req,res) => {
+const preview = async (req, res) => {
   if (!isValidObjectId(req.params.id))
     return res.status(404).json({ message: "Invalid file-Id" });
-    try {
-      const _id = mongoose.Types.ObjectId(req.params.id);
-      const cursor = bucket.find({ _id });
-      const filesMetadata = await cursor.toArray();
-      if (!filesMetadata.length) return res.json({ err: "Not a File!" });
+  try {
+    const _id = mongoose.Types.ObjectId(req.params.id);
+    const cursor = bucket.find({ _id });
+    const filesMetadata = await cursor.toArray();
+    if (!filesMetadata.length) return res.json({ err: "Not a File!" });
 
-      bucket.openDownloadStream(_id).pipe(res);
-
-     
-     
-    } catch (err) {
-      res.json({ err: `Error: ${err.message}` });
-    }
-}
+    bucket.openDownloadStream(_id).pipe(res);
+  } catch (err) {
+    res.json({ err: `Error: ${err.message}` });
+  }
+};
 
 const download = async (req, res) => {
   if (!isValidObjectId(req.params.id))
     return res.status(404).json({ message: "Invalid file-Id" });
-  // try {
-  //   const user = bucket.find({ "metadata.uploadedBy": req.userData.userId });
-  //   const filesMetadata = await user.toArray();
-  //   if (!filesMetadata.length)
-  //     return res.json({ err: "Not Authorize to download this file" });
-  // } catch (err) {
-  //   res.json({ err: `Error: ${err.message}` });
-  // }
-
-  try {
+ try {
     const _id = mongoose.Types.ObjectId(req.params.id);
     // Getting the file first is only a guard to avoid FileNotFound error
     const cursor = bucket.find({ _id });
     const filesMetadata = await cursor.toArray();
 
-    if (!filesMetadata.length) return res.status(404).json({ err: "Not a File!" });
+    if (!filesMetadata.length)
+      return res.status(404).json({ err: "Not a File!" });
     // You can simply stream a file like this with its id
     let user;
 
     user = await User.findById(req.userData.userId);
     if (!user) return res.status(404).json({ message: "No user found" });
-    console.log(filesMetadata[0].contentType)
+    console.log(filesMetadata[0].contentType);
     user.downloaded_files.push({
       filename: filesMetadata[0].filename,
       uploadDate: filesMetadata[0].uploadDate,
@@ -616,23 +588,24 @@ const download = async (req, res) => {
       .save()
       .then(() => {
         const readStream = bucket.openDownloadStream(_id);
-      res.set('Content-Type', `${filesMetadata[0].contentType}`);
-      res.set('Content-Disposition', `attachment; filename="${filesMetadata[0].filename}"`);
-    
-      readStream.pipe(res);      })
+        res.set("Content-Type", `${filesMetadata[0].contentType}`);
+        res.set(
+          "Content-Disposition",
+          `attachment; filename="${filesMetadata[0].filename}"`
+        );
+
+        readStream.pipe(res);
+      })
       .catch((err) => {
         console.log(err);
         return res
           .status(401)
           .json({ message: "Something went wrong, please try again" });
       });
-    
-
-
   } catch (err) {
     res.json({ err: `Error: ${err.message}` });
   }
-}; 
+};
 
 const getDownloadedFiles = async (req, res) => {
   let user;
@@ -668,8 +641,7 @@ const getNewBill = async (req, res) => {
     user = await User.findById(req.userData.userId, "bills")
       .populate({
         path: "bills",
-        select:
-          "bill_name bill_amount status  createdAt",
+        select: "bill_name bill_amount status  createdAt",
       })
       .exec();
     const userBills = user.bills.filter((bill) => filterFunc(bill));
@@ -692,8 +664,7 @@ const userBills = async (req, res) => {
     user = await User.findById(req.userData.userId, "bills")
       .populate({
         path: "bills",
-        select:
-          "bill_name bill_amount status createdAt",
+        select: "bill_name bill_amount status createdAt",
       })
       .exec();
     res.json(user);
@@ -706,55 +677,61 @@ const userBills = async (req, res) => {
 };
 
 const getCert = async (req, res) => {
-  const user = await User.findById(req.userData.userId)
-  
- try {
+  const user = await User.findById(req.userData.userId);
+
+  try {
     const { id } = req.params;
-    const bill = await Bill.findOne({individual: user._id, bill_name:"annual membership certificate"}, "individual status validUntil").populate({
+    const bill = await Bill.findOne(
+      { individual: user._id, bill_name: "annual membership certificate" },
+      "individual status validUntil"
+    ).populate({
       path: "individual",
-      select:
-        "first_name last_name membership_type ",
+      select: "first_name last_name membership_type ",
     });
     if (!bill) {
-      return res.status(404).json({ error: 'Bill not found' });
+      return res.status(404).json({ error: "Bill not found" });
     }
-    if (bill.status === 'unpaid') {
-      return res.status(400).json({ error: 'Bill not paid' });
+    if (bill.status === "unpaid") {
+      return res.status(400).json({ error: "Bill not paid" });
     }
     if (bill.validUntil < Date.now()) {
-      return res.status(400).json({ error: 'Certificate expired' });
+      return res.status(400).json({ error: "Certificate expired" });
     }
-    if(!bill.name === "annual membership certificate") {
-      return res.status(400).json({ error: 'You have not paid for certificate yet' });
-
+    if (!bill.name === "annual membership certificate") {
+      return res
+        .status(400)
+        .json({ error: "You have not paid for certificate yet" });
     }
 
     const b = {
       name: `${bill.individual.first_name} ${bill.individual.last_name}`,
       validUntil: bill.validUntil,
-      category: bill.individual.membership_type
-    }
+      category: bill.individual.membership_type,
+    };
     const pdf = await generateCertificate(b);
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="membership_certificate.pdf"`);
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="membership_certificate.pdf"`
+    );
     res.send(pdf);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
 
-
 async function generateCertificate(user) {
-
   const doc = new PDFDocument();
-  doc.fontSize(20).text('Membership Certificate');
+  doc.fontSize(20).text("Membership Certificate");
   doc.fontSize(16).text(`Name: ${user.name}`);
   doc.fontSize(16).text(`Category: ${user.category}`);
-  doc.fontSize(16).text(`Valid until: ${new Date(user.validUntil).toLocaleDateString()}`);
+  doc
+    .fontSize(16)
+    .text(`Valid until: ${new Date(user.validUntil).toLocaleDateString()}`);
   const pdfBuffer = await new Promise((resolve, reject) => {
     const buffers = [];
-    doc.on('data', buffers.push.bind(buffers));
-    doc.on('end', () => resolve(Buffer.concat(buffers)));
+    doc.on("data", buffers.push.bind(buffers));
+    doc.on("end", () => resolve(Buffer.concat(buffers)));
     doc.end();
   });
   return pdfBuffer;
@@ -763,108 +740,102 @@ async function generateCertificate(user) {
 const pay = async (req, res) => {
   try {
     const { amount } = req.body;
-    const user = await User.findById(req.userData.userId)
+    const user = await User.findById(req.userData.userId);
 
     if (!user) {
-      return res
-        .status(404)
-        .json({ message: "No user found" });
+      return res.status(404).json({ message: "No user found" });
     }
-    const bill = await Bill.findOne({_id: req.params.billId, individual: user._id})
-      if (!bill) {
-        return res
-          .status(404)
-          .json({ message: "No bill found" });
-      }
-      if (bill.status === "paid") {
-              return res.status(400).json({ error: 'Bill has already been paid' });
-            }
-    // Create Paystack payment request
-    const { data } = await paystack.post('/transaction/initialize', {
-      email: user.email,
-      amount : amount * 100,
-      metadata: {
-        billId: bill.id
-      }
-      
+    const bill = await Bill.findOne({
+      _id: req.params.billId,
+      individual: user._id,
     });
-   
+    if (!bill) {
+      return res.status(404).json({ message: "No bill found" });
+    }
+    if (bill.status === "paid") {
+      return res.status(400).json({ error: "Bill has already been paid" });
+    }
+    // Create Paystack payment request
+    const { data } = await paystack.post("/transaction/initialize", {
+      email: user.email,
+      amount: amount * 100,
+      metadata: {
+        billId: bill.id,
+      },
+    });
+
     // Return payment URL to client
     res.json({ url: data.data.authorization_url });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 
-
-
 const webhook = async (req, res) => {
-  console.log(req.body)
+  console.log(req.body);
   const secret = process.env.PAYSTACK_SECRET_KEY;
-  const hash = req.headers['x-paystack-signature'];
+  const hash = req.headers["x-paystack-signature"];
 
   // Verify request signature
-  const hmac = crypto.createHmac('sha512', secret);
+  const hmac = crypto.createHmac("sha512", secret);
   hmac.update(JSON.stringify(req.body));
-  const digest = hmac.digest('hex');
+  const digest = hmac.digest("hex");
   if (digest !== hash) {
-    console.error('Invalid webhook signature');
-    res.status(400).send('Invalid signature');
+    console.error("Invalid webhook signature");
+    res.status(400).send("Invalid signature");
     return;
   }
- 
+
   // Perform necessary actions based on the webhook event
   const event = req.body.event;
   switch (event) {
-    case 'charge.success':
+    case "charge.success":
       const { customer, channel, reference, amount } = req.body.data;
-      const user = await User.findOne(
-        { email: customer.email },
-      );
+      const user = await User.findOne({ email: customer.email });
       if (!user) {
-        return res
-          .status(404)
-          .json({ message: "No user found" });
+        return res.status(404).json({ message: "No user found" });
       }
-    
-      const bill = await Bill.findOne({_id: req.body.data.metadata.billId, individual: user._id})
+
+      const bill = await Bill.findOne({
+        _id: req.body.data.metadata.billId,
+        individual: user._id,
+      });
       if (!bill) {
-        return res
-          .status(404)
-          .json({ message: "No bill found" });
+        return res.status(404).json({ message: "No bill found" });
       }
-      bill.status = "paid"
-      bill.bill_amount = amount
-      bill.transaction_ref = reference
-      bill.mode_of_payment = channel
-      if(bill.name === 'annual membership certificate') {
+      bill.status = "paid";
+      bill.bill_amount = amount;
+      bill.transaction_ref = reference;
+      bill.mode_of_payment = channel;
+      if (bill.name === "annual membership certificate") {
         bill.validUntil = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
-
       }
 
-      bill.save()
-      // Find the payment record in your database using the reference
-      // Update the payment status in your database to "paid"
+      bill.save();
+
       break;
-    case 'charge.failure':
-      // Handle payment failure
+    case "charge.failure":
       break;
-    // Handle other webhook events
   }
 
-  // Return a 200 OK response to Paystack
-  res.status(200).send('OK');
+  res.status(200).send("OK");
 };
 
-
-
-
-
-
-
-
-
+const userEvents = async (req, res) => {
+  let user;
+  let event;
+  try {
+    user = await User.findById(req.userData.userId);
+    event = await Event.find({ members: user.membership_type });
+    res.json(event);
+  } catch (err) {
+    console.log(err);
+    return res
+      .status(500)
+      .json({ message: "Something went wrong, Please try again" });
+  }
+};
 
 module.exports = {
   signup,
@@ -884,5 +855,6 @@ module.exports = {
   getCert,
   preview,
   pay,
-  webhook
+  webhook,
+  userEvents,
 };

@@ -22,7 +22,7 @@ router.post(
       .withMessage("Name of Discussion Group is Required with minimum of 6 characters"),
   ],
   discussionController.createGroup
-); // add auth
+); 
 router.post(
   "/send-message/:gId",
   auth,

@@ -6,15 +6,9 @@ const discussionGroupSchema = new mongoose.Schema({
   name: {
     type: String,
     required: "Name is required!",
+    lowercase: true,
+
   },
-  // belong: {
-  //   type: String,
-  //   enum: {
-  //     values: ['users','admin'],
-  //     message: '{VALUE} is not an option'
-  //   },
-  //   default: 'users'
-  // },
   users:[{
     type: Schema.Types.ObjectId,
     ref: "User",

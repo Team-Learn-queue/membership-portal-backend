@@ -94,32 +94,6 @@ router.get("/get-cert", auth, userController.getCert )
 router.post("/pay/:billId",  auth, userController.pay )
 router.post("/webhook", userController.webhook )
 
-
-
-
-
-
-// router.post(
-//   "/file-upload", auth,
-//   function (req, res, next) {
-//     fileUpload(req, res, function (err) {
-//       if (err instanceof multer.MulterError) {
-//         return res.status(400).json({
-//           message: "Something went wrong, Files should not be more than 10",
-//         });
-//       } else if (err) {
-//         return res.status(400).json({
-//           message: "Something went wrong, Please try again.",
-//         });
-//       }
-
-//       next()
-//     });
-//   },
-//   userController.fileUpload
-// );
-// router.get("/get-files", auth, userController.userFiles);
-// router.get("/file-download/:id", auth, userController.fileDownload);
-
+router.get('/user-events', auth, userController.userEvents) 
 
 exports.router = router;
