@@ -7,6 +7,8 @@ const discussionGroupSchema = new mongoose.Schema({
     type: String,
     required: "Name is required!",
     lowercase: true,
+    trim: true,
+
 
   },
   users:[{
@@ -14,6 +16,6 @@ const discussionGroupSchema = new mongoose.Schema({
     ref: "User",
   }
   ],
-});
+}, { timestamps: true });
 
 module.exports = mongoose.model("DiscussionGroup", discussionGroupSchema);

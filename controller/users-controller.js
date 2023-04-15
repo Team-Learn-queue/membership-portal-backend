@@ -2,7 +2,6 @@ const { validationResult } = require("express-validator");
 const jwt = require("jsonwebtoken");
 const axios = require("axios");
 const Event = require("../models/event");
-
 const { isValidObjectId } = require("mongoose");
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
@@ -10,14 +9,9 @@ const crypto = require("crypto");
 const PDFDocument = require("pdfkit");
 const Bill = require("../models/bill");
 const Category = require("../models/category");
-
 const User = require("../models/users");
 const VerificationToken = require("../models/verificationToken");
 const ResetToken = require("../models/resetToken");
-dotenv.config();
-
-const connection = mongoose.connection;
-
 const {
   transporter,
   verifyEmailTemplate,
@@ -25,7 +19,8 @@ const {
   passwordSetTemplate,
   verifiedTemplate,
 } = require("../util/email");
-
+dotenv.config();
+const connection = mongoose.connection;
 let gfs;
 
 let bucket;
@@ -46,7 +41,6 @@ const paystack = axios.create({
 
 let environment = process.env.NODE_ENV;
 let url;
-
 if (environment === "development") {
   url = "http://localhost:3000";
 } else {
@@ -55,12 +49,10 @@ if (environment === "development") {
 
 const signup = async (req, res) => {
   const errors = validationResult(req);
-
   if (!errors.isEmpty()) {
     const message = errors.errors[0].msg;
     return res.status(400).json({ message: message });
   }
-
   const {
     first_name,
     last_name,
@@ -80,7 +72,6 @@ const signup = async (req, res) => {
   } catch (err) {
     return res.status(500).json({ message: " Signing Up Failed" });
   }
-
   if (existingUser) {
     return res.status(422).json({ message: "User Already Exist" });
   }
@@ -109,91 +100,58 @@ const signup = async (req, res) => {
     years_of_exp,
     membership_type,
   });
-
   user
     .save()
     .then((user) => {
       const randomBytes = crypto.randomBytes(16).toString("hex");
-
       const token = VerificationToken({
         userId: user._id,
         token: randomBytes,
       });
-
       token.save().then(async () => {
         const emailLink = `${url}/email-verification?email=${user.email}&token=${randomBytes}`;
         const mailOptions = verifyEmailTemplate(user, emailLink);
-
         transporter.sendMail(mailOptions, (error, info) => {
           if (error) {
-            return res
-              .status(500)
-              .json({ message: "Error sending email", error });
+            return res.status(500).json({ message: "Error sending email", error });
           } else {
-            return res.status(201).json({
-              message: `${user.first_name} ${user.last_name} a confirmation email has been sent to ${user.email}`,
+            return res.status(201).json({message: `${user.first_name} ${user.last_name} a confirmation email has been sent to ${user.email}`,
             });
           }
         });
       });
     })
     .catch((e) => {
-      return res.status(500).json({
-        message: "Couldn't create User, Please Try Again",
-
-        error: e,
-      });
+      return res.status(500).json({message: "Couldn't create User, Please Try Again",error: e});
     });
 };
 
 //Login
 
 const login = async (req, res, next) => {
-  const errors = validationResult(req);
-
-  if (!errors.isEmpty()) {
-    const message = errors.errors[0].msg;
-    return res.status(400).json({ message: message });
-  }
   const { email, password } = req.body;
   let existingUser;
   try {
     existingUser = await User.findOne({ email: email });
   } catch (err) {
-    return res
-      .status(500)
-      .json({ message: "Login failed , please try again " });
+    return res.status(500).json({ message: "Login failed , please try again " });
   }
-
   if (!existingUser) {
-    return res
-      .status(404)
-      .json({ message: "Invalid Credentials, could not log you in" });
+    return res.status(404).json({ message: "Invalid Credentials, could not log you in" });
   }
-
   let isValidPassword = false;
   try {
     isValidPassword = await existingUser.comparePassword(password);
   } catch (err) {
-    return res
-      .status(500)
-      .json({
-        message: "Something went wrong, could not log you in. Please try again",
-      });
+    return res.status(500).json({ message: "Something went wrong, could not log you in. Please try again"});
   }
-
   if (!isValidPassword) {
-    return res
-      .status(403)
-      .json({ message: "Invalid Credentials, could not log you in" });
+    return res.status(403).json({ message: "Invalid Credentials, could not log you in" });
   }
   if (!existingUser.isVerified) {
-    return res
-      .status(403)
-      .json({ message: "Please Verify your email then Login" });
+    return res.status(403).json({ message: "Please Verify your email then Login" });
   }
-
-  const name = `${existingUser.first_name} ${existingUser.last_name}`;
+const name = `${existingUser.first_name} ${existingUser.last_name}`;
   let token;
   try {
     token = jwt.sign(
@@ -205,11 +163,8 @@ const login = async (req, res, next) => {
       process.env.JWT_KEY
     );
   } catch (err) {
-    return res
-      .status(500)
-      .json({ message: "Logging Failed, Please try again" });
+    return res.status(500).json({ message: "Logging Failed, Please try again" });
   }
-
   return res.status(202).json({
     message: `Login Sucessful`,
     userObject: { userId: existingUser.id, role: existingUser.role },
@@ -221,56 +176,33 @@ const login = async (req, res, next) => {
 const verifyEmail = async (req, res) => {
   let check;
   try {
-    check = await User.findOne({
-      email: req.query.email,
-    });
+    check = await User.findOne({ email: req.query.email, });
   } catch (err) {
-    return res.status(500).json({
-      message: "Verification Of Email Failed. Please Try again",
-    });
+    return res.status(500).json({message: "Verification Of Email Failed. Please Try again"});
   }
-  if (check.isVerified)
-    return res.json({
-      message: "User has already been verified, Please Login ",
-    });
-
+  if (check.isVerified) return res.json({message: "User has already been verified, Please Login "});
   let existingUser;
   let token;
   try {
     token = await VerificationToken.findOne({ token: req.query.token });
   } catch (err) {
-    return res
-      .status(500)
-      .json({ message: " Verification Of Email Failed. Please Try again" });
-  }
-
-  if (!token)
-    return res.status(403).json({
-      message:
-        "Your verification link may have expired. Please click on resend for verify your Email ",
+    return res.status(500).json({ message: " Verification Of Email Failed. Please Try again" })}
+    if (!token)
+    return res.status(403).json({message:"Your verification link may have expired.",
     });
-
-  try {
+    try {
     existingUser = await User.findOne({
       _id: token.userId.toString(),
       email: req.query.email,
     });
   } catch (err) {
-    return res.status(500).json({
-      message: "Verification Of Email Failed. Please Try again",
-    });
+    return res.status(500).json({message: "Verification Of Email Failed. Please Try again",});
   }
-
   if (!existingUser) {
-    return res.status(404).json({
-      message: "User not found. ",
-    });
+    return res.status(404).json({message: "User not found. "});
   } else if (existingUser.isVerified) {
     await VerificationToken.findByIdAndDelete(token._id);
-
-    return res.json({
-      message: "User has already been verified. ",
-    });
+    return res.json({message: "User has already been verified. "});
   } else {
     existingUser.isVerified = true;
     await VerificationToken.findByIdAndDelete(token._id);
@@ -284,26 +216,17 @@ const verifyEmail = async (req, res) => {
               .status(500)
               .json({ message: "Error sending email", error });
           }
-          // } else {
-          //   return res.status(201).json({
-          //     message: `${user.first_name} ${user.last_name} a verification email has been sent to ${user.email}`,
-
-          //   });
-          // }
         });
         return res.status(200).json({
           message: `${user.first_name} ${user.last_name}, You have sucessfully verified your email, you can login.`,
         });
       })
-      .catch((e) => {
-        res.status(500).json({ message: "Verification Of Email Failed" });
-      });
+      .catch((e) => {res.status(500).json({ message: "Verification Of Email Failed" }) });
   }
 };
 
 const resendLink = async (req, res) => {
   const errors = validationResult(req);
-
   if (!errors.isEmpty()) {
     const message = errors.errors[0].msg;
     return res.status(400).json({ message: message });
@@ -312,52 +235,34 @@ const resendLink = async (req, res) => {
   try {
     user = await User.findOne({ email: req.body.email });
   } catch (err) {
-    return res
-      .status(500)
-      .json({ message: "Something went wrong, Please try again" });
+    return res.status(500).json({ message: "Something went wrong, Please try again" });
   }
-
-  if (!user) return res.status(404).json({ message: "User not found" });
-  if (user.isVerified)
-    return res.status(203).json({
-      message: "This Account has already been verified, Please Log in",
-    });
-
-  const randomBytes = crypto.randomBytes(16).toString("hex");
-
-  const token = VerificationToken({
+ if (!user) return res.status(404).json({ message: "User not found" });
+ if (user.isVerified) return res.status(203).json({ message: "This Account has already been verified, Please Log in"});
+ const randomBytes = crypto.randomBytes(16).toString("hex");
+ const token = VerificationToken({
     userId: user._id,
     token: randomBytes,
   });
-
   token
     .save()
     .then(() => {
       const emailLink = `${url}/email-verification?email=${user.email}&token=${randomBytes}`;
       const mailOptions = verifyEmailTemplate(user, emailLink);
-
       transporter.sendMail(mailOptions, (error, info) => {
         if (error) {
-          return res
-            .status(500)
-            .json({ message: "Error sending email", error });
+          return res.status(500).json({ message: "Error sending email", error });
         } else {
-          return res.status(200).json({
-            message: `${user.first_name} ${user.last_name} a verification email has been sent to ${user.email}`,
-          });
+          return res.status(200).json({ message: `${user.first_name} ${user.last_name} a verification email has been sent to ${user.email}`});
         }
       });
     })
     .catch((e) => {
-      return res
-        .status(500)
-        .json({ message: "Couldn't create User, Please Try Again", error: e });
-    });
+      return res.status(500).json({ message: "Couldn't create User, Please Try Again", error: e })});
 };
 
 const forgotPassword = async (req, res) => {
   const errors = validationResult(req);
-
   if (!errors.isEmpty()) {
     const message = errors.errors[0].msg;
     return res.status(400).json({ message: message });
@@ -365,122 +270,86 @@ const forgotPassword = async (req, res) => {
   const email = req.body.email;
   let user;
   let token = crypto.randomBytes(16).toString("hex");
-
   try {
     user = await User.findOne({ email });
   } catch (err) {
-    return res
-      .status(500)
-      .json({ message: "Something went wrong, Please try again" });
+    return res.status(500).json({ message: "Something went wrong, Please try again" });
   }
   if (!user) {
     return res.status(404).json({ message: "User does not exist" });
   }
-
   const oldToken = await ResetToken.findOne({ userId: user.id });
   if (oldToken) await oldToken.deleteOne();
-
   const resetToken = ResetToken({ userId: user.id, token: token });
-
   resetToken
     .save()
     .then(() => {
       const resetLink = `${url}/reset-password?userId=${user.id}&token=${token}`;
       const mailOptions = forgotEmailTemplate(user, resetLink);
-
       transporter.sendMail(mailOptions, (error, info) => {
-        if (error) {
-          return res
-            .status(500)
-            .json({ message: "Error sending email", error });
+      if (error) {
+          return res.status(500).json({ message: "Error sending email", error });
         } else {
-          return res.status(201).json({
-            message: `A password reset email has been sent to ${user.email}`,
-          });
+          return res.status(201).json({message: `A password reset email has been sent to ${user.email}`});
         }
       });
-    })
-
-    .catch((e) => {
+    }).catch((e) => {
       return res.status(500).json({ message: "Couldn't save User ", error: e });
     });
 };
 
 const resetPassword = async (req, res) => {
   const errors = validationResult(req);
-
   if (!errors.isEmpty()) {
     const message = errors.errors[0].msg;
     return res.status(404).json({ message: message });
   }
   let user;
-
   const newPassword = req.body.password;
-
   try {
     user = await User.findOne(req.user._id);
   } catch (err) {
-    return res
-      .status(500)
-      .json({ message: "Something went wrong, Please try again" });
+    return res.status(500).json({ message: "Something went wrong, Please try again" });
   }
   if (!user) {
     return res.status(404).json({ message: "User not found" });
   }
-
   const samePass = await user.comparePassword(newPassword);
-  if (samePass)
-    return res.status(403).json({
-      message: `New Password must be different`,
-    });
-
+  if (samePass) return res.status(403).json({message: `New Password must be different`});
   user.password = newPassword.trim();
-
-  user
-    .save()
+   user.save()
     .then((user) => {
       ResetToken.findOneAndDelete({ userId: user.id }).then(() => {
         const mailOptions = passwordSetTemplate(user);
         transporter.sendMail(mailOptions, (error, info) => {
           if (error) {
-            return res
-              .status(500)
-              .json({ message: "Error sending email", error });
+            return res.status(500).json({ message: "Error sending email", error });
           } else {
-            return res.status(200).json({
-              message: `${user.first_name} ${user.last_name} your password has been reset sucessfully`,
+            return res.status(200).json({message: `${user.first_name} ${user.last_name} your password has been reset sucessfully`,
             });
           }
         });
       });
     })
     .catch((e) => {
-      return res
-        .status(500)
-        .json({ message: "Couldn't Reset password", error: e });
+      return res.status(500).json({ message: "Couldn't Reset password", error: e });
     });
 };
 
 const getLoggedUser = (req, res) => {
   const userId = req.userData.userId;
-  User.findById(
-    userId,
-    " first_name last_name address phone_number employer years_of_exp membership_type"
-  )
+  User.findById(userId," first_name last_name address phone_number employer years_of_exp membership_type")
     .then((user) => {
       if (!user) return res.status(404).json({ message: "No user found" });
       return res.status(200).json(user);
     })
     .catch(() => {
-      return res
-        .status(500)
-        .json({ message: "Someting went wrong!.. please try again." });
+      return res.status(500).json({ message: "Someting went wrong!.. please try again." });
     });
 };
 
 const editProfile = async (req, res) => {
   const errors = validationResult(req);
-
   if (!errors.isEmpty()) {
     const message = errors.errors[0].msg;
     return res.status(400).json({ message: message });
@@ -513,18 +382,10 @@ const editProfile = async (req, res) => {
       { new: true }
     );
   } catch (err) {
-    return res
-      .status(500)
-      .json({ message: " Something went Please try again" });
+    return res.status(500).json({ message: " Something went Please try again" });
   }
-
-  if (!editedUser) {
-    return res.status(404).json({ message: "User does not exist" });
-  }
-
-  return res
-    .status(201)
-    .json({ message: " Your profile has been sucessfully edited" });
+if (!editedUser) return res.status(404).json({ message: "User does not exist" });
+return res.status(201).json({ message: " Your profile has been sucessfully edited" });
 };
 
 const getUploadedFiles = async (req, res) => {
@@ -548,14 +409,12 @@ const getSingleFile = async (req, res) => {
 };
 
 const preview = async (req, res) => {
-  if (!isValidObjectId(req.params.id))
-    return res.status(404).json({ message: "Invalid file-Id" });
+  if (!isValidObjectId(req.params.id)) return res.status(404).json({ message: "Invalid file-Id" });
   try {
     const _id = mongoose.Types.ObjectId(req.params.id);
     const cursor = bucket.find({ _id });
     const filesMetadata = await cursor.toArray();
     if (!filesMetadata.length) return res.json({ err: "Not a File!" });
-
     bucket.openDownloadStream(_id).pipe(res);
   } catch (err) {
     res.json({ err: `Error: ${err.message}` });
@@ -563,19 +422,15 @@ const preview = async (req, res) => {
 };
 
 const download = async (req, res) => {
-  if (!isValidObjectId(req.params.id))
-    return res.status(404).json({ message: "Invalid file-Id" });
+  if (!isValidObjectId(req.params.id)) return res.status(404).json({ message: "Invalid file-Id" });
  try {
     const _id = mongoose.Types.ObjectId(req.params.id);
     // Getting the file first is only a guard to avoid FileNotFound error
     const cursor = bucket.find({ _id });
     const filesMetadata = await cursor.toArray();
-
-    if (!filesMetadata.length)
-      return res.status(404).json({ err: "Not a File!" });
+    if (!filesMetadata.length) return res.status(404).json({ err: "Not a File!" });
     // You can simply stream a file like this with its id
     let user;
-
     user = await User.findById(req.userData.userId);
     if (!user) return res.status(404).json({ message: "No user found" });
     console.log(filesMetadata[0].contentType);
@@ -584,8 +439,7 @@ const download = async (req, res) => {
       uploadDate: filesMetadata[0].uploadDate,
       contentType: filesMetadata[0].contentType,
     });
-    user
-      .save()
+    user.save()
       .then(() => {
         const readStream = bucket.openDownloadStream(_id);
         res.set("Content-Type", `${filesMetadata[0].contentType}`);
@@ -598,10 +452,7 @@ const download = async (req, res) => {
       })
       .catch((err) => {
         console.log(err);
-        return res
-          .status(401)
-          .json({ message: "Something went wrong, please try again" });
-      });
+        return res.status(401).json({ message: "Something went wrong, please try again" })});
   } catch (err) {
     res.json({ err: `Error: ${err.message}` });
   }
@@ -613,12 +464,9 @@ const getDownloadedFiles = async (req, res) => {
     user = await User.findById(req.userData.userId, "downloaded_files");
   } catch (err) {
     console.log(err);
-    return res
-      .status(500)
-      .json({ message: "Something went wrong, Please try again" });
+    return res.status(500).json({ message: "Something went wrong, Please try again" });
   }
-
-  res.json(user);
+res.json(user);
 };
 
 const getNewBill = async (req, res) => {
@@ -631,54 +479,36 @@ const getNewBill = async (req, res) => {
     );
     const currentDate = new Date();
 
-    return (
-      expiredDate > currentDate &&
-      (bill.status === "unpaid" || bill.status === "dued")
-    );
+    return ( expiredDate > currentDate && (bill.status === "unpaid" || bill.status === "dued"));
   };
   let user;
   try {
     user = await User.findById(req.userData.userId, "bills")
-      .populate({
-        path: "bills",
-        select: "bill_name bill_amount status  createdAt",
-      })
+      .populate({path: "bills",select: "bill_name bill_amount status  createdAt"})
       .exec();
     const userBills = user.bills.filter((bill) => filterFunc(bill));
-    res.json({
-      user_id: user.id,
-      user_bills: userBills,
-    });
+    res.json({user_id: user.id,user_bills: userBills});
   } catch (err) {
     console.log(err);
-    return res
-      .status(500)
-      .json({ message: "Something went wrong, Please try again" });
+    return res.status(500).json({ message: "Something went wrong, Please try again" });
   }
 };
 
 const userBills = async (req, res) => {
-  //  await User.findOne({ _id: req.userData.userId });
   let user;
   try {
     user = await User.findById(req.userData.userId, "bills")
-      .populate({
-        path: "bills",
-        select: "bill_name bill_amount status createdAt",
-      })
+      .populate({path: "bills", select: "bill_name bill_amount status createdAt"})
       .exec();
-    res.json(user);
+   return  res.json(user);
   } catch (err) {
     console.log(err);
-    return res
-      .status(500)
-      .json({ message: "Something went wrong, Please try again" });
+    return res.status(500).json({ message: "Something went wrong, Please try again" });
   }
 };
 
 const getCert = async (req, res) => {
   const user = await User.findById(req.userData.userId);
-
   try {
     const { id } = req.params;
     const bill = await Bill.findOne(
@@ -688,21 +518,10 @@ const getCert = async (req, res) => {
       path: "individual",
       select: "first_name last_name membership_type ",
     });
-    if (!bill) {
-      return res.status(404).json({ error: "Bill not found" });
-    }
-    if (bill.status === "unpaid") {
-      return res.status(400).json({ error: "Bill not paid" });
-    }
-    if (bill.validUntil < Date.now()) {
-      return res.status(400).json({ error: "Certificate expired" });
-    }
-    if (!bill.name === "annual membership certificate") {
-      return res
-        .status(400)
-        .json({ error: "You have not paid for certificate yet" });
-    }
-
+    if (!bill) return res.status(404).json({ error: "Bill not found" });
+    if (bill.status === "unpaid") return res.status(400).json({ error: "Bill not paid" });
+    if (bill.validUntil < Date.now()) return res.status(400).json({ error: "Certificate expired" });
+    if (!bill.name === "annual membership certificate") return res.status(400).json({ error: "You have not paid for certificate yet" });
     const b = {
       name: `${bill.individual.first_name} ${bill.individual.last_name}`,
       validUntil: bill.validUntil,
@@ -710,10 +529,7 @@ const getCert = async (req, res) => {
     };
     const pdf = await generateCertificate(b);
     res.setHeader("Content-Type", "application/pdf");
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename="membership_certificate.pdf"`
-    );
+    res.setHeader("Content-Disposition",`attachment; filename="membership_certificate.pdf"`);
     res.send(pdf);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -741,21 +557,14 @@ const pay = async (req, res) => {
   try {
     const { amount } = req.body;
     const user = await User.findById(req.userData.userId);
-
-    if (!user) {
-      return res.status(404).json({ message: "No user found" });
-    }
+    if (!user) return res.status(404).json({ message: "No user found" });
     const bill = await Bill.findOne({
       _id: req.params.billId,
       individual: user._id,
     });
-    if (!bill) {
-      return res.status(404).json({ message: "No bill found" });
-    }
-    if (bill.status === "paid") {
-      return res.status(400).json({ error: "Bill has already been paid" });
-    }
-    // Create Paystack payment request
+    if (!bill) return res.status(404).json({ message: "No bill found" });
+    if (bill.status === "paid") return res.status(400).json({ error: "Bill has already been paid" })
+        // Create Paystack payment request
     const { data } = await paystack.post("/transaction/initialize", {
       email: user.email,
       amount: amount * 100,
@@ -776,7 +585,6 @@ const webhook = async (req, res) => {
   console.log(req.body);
   const secret = process.env.PAYSTACK_SECRET_KEY;
   const hash = req.headers["x-paystack-signature"];
-
   // Verify request signature
   const hmac = crypto.createHmac("sha512", secret);
   hmac.update(JSON.stringify(req.body));
@@ -786,24 +594,18 @@ const webhook = async (req, res) => {
     res.status(400).send("Invalid signature");
     return;
   }
-
   // Perform necessary actions based on the webhook event
   const event = req.body.event;
   switch (event) {
     case "charge.success":
       const { customer, channel, reference, amount } = req.body.data;
       const user = await User.findOne({ email: customer.email });
-      if (!user) {
-        return res.status(404).json({ message: "No user found" });
-      }
-
+      if (!user) return res.status(404).json({ message: "No user found" });
       const bill = await Bill.findOne({
         _id: req.body.data.metadata.billId,
         individual: user._id,
       });
-      if (!bill) {
-        return res.status(404).json({ message: "No bill found" });
-      }
+      if (!bill) return res.status(404).json({ message: "No bill found" });
       bill.status = "paid";
       bill.bill_amount = amount;
       bill.transaction_ref = reference;
@@ -811,14 +613,11 @@ const webhook = async (req, res) => {
       if (bill.name === "annual membership certificate") {
         bill.validUntil = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
       }
-
       bill.save();
-
       break;
     case "charge.failure":
       break;
   }
-
   res.status(200).send("OK");
 };
 
@@ -831,9 +630,7 @@ const userEvents = async (req, res) => {
     res.json(event);
   } catch (err) {
     console.log(err);
-    return res
-      .status(500)
-      .json({ message: "Something went wrong, Please try again" });
+    return res.status(500).json({ message: "Something went wrong, Please try again" });
   }
 };
 

@@ -2,26 +2,21 @@ const express = require("express");
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 const path = require("path");
-
 const usersRoutes = require("./routes/users-routes");
 const adminRoutes = require("./routes/admin-routes");
 const discussionRoutes = require("./routes/discussion");
-// "multer": "1.4.4-lts.1",
 
 const app = express();
 app.use(express.json());
-
 app.use("/uploads/files", express.static(path.join("uploads", "files")));
 
 dotenv.config();
 let environment = process.env.NODE_ENV;
 let url 
-
 if(environment === 'development') {
  url = 'http://localhost:3000/'
 }else {
   url = 'http://portal.anstesters.com/'
-
 }
 app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -59,10 +54,7 @@ mongoose
       maxPoolSize: 4,
 
     } 
-  )
-
-
-  .then(() => {
+  ).then(() => {
     const server = app.listen(process.env.PORT || 8080);
     const io = require("./socket").init(server, {
       cors: {

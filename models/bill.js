@@ -12,7 +12,6 @@ const billSchema = new Schema(
       type: String,
       required: true,
       lowercase: true,
-
     },
     bill_amount: {
       type: Number,
@@ -23,14 +22,10 @@ const billSchema = new Schema(
     //   enum: {
     //     values: ["optional", "mandatory"],
     //     message: "{VALUE} is not an option",
-    //   }, 
+    //   },
     // },
     duration: {
       type: String,
-      // enum: {
-      //   values: ["monthly", "quarterly", "yearly"],
-      //   message: "{VALUE} is not an option",
-      // },
     },
     status: {
       type: String,
@@ -38,26 +33,21 @@ const billSchema = new Schema(
         values: ["unpaid", "paid"],
         message: "{VALUE} is not an option",
       },
-      default: "unpaid"
+      default: "unpaid",
     },
     validUntil: {
-      type: Date
+      type: Date,
     },
     mode_of_payment: {
       type: String,
-      // default: "cash"
-
     },
     transaction_ref: {
-      type: String, 
-      // default: "000000011223344"
-
-    }
+      type: String,
+    },
   },
   { timestamps: true }
 );
 
 module.exports = mongoose.model("Bill", billSchema);
-
 
 // date={new Date(post.createdAt).toLocaleDateString('en-US')}

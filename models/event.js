@@ -7,7 +7,7 @@ const eventSchema = new Schema({
     type: String,
     required: true,
     lowercase: true,
-
+    trim: true,
   },
   members: [{
     type: String,
@@ -18,6 +18,7 @@ const eventSchema = new Schema({
     type: String,
     required: true,
     lowercase: true,
+    trim: true,
 
   },
   start_date: {
@@ -34,6 +35,6 @@ const eventSchema = new Schema({
     type: Date
   }
 
-});
+}, { timestamps: true });
  
 module.exports = mongoose.model('event', eventSchema);

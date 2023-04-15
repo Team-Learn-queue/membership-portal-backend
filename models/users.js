@@ -7,15 +7,21 @@ const userSchema = new Schema({
   first_name: {
     type: String,
     required: true,
+    lowercase: true,
+    trim: true,
   },
   last_name: {
     type: String,
     required: true,
+    lowercase: true,
+    trim: true,
 
   },
   email: {
     type: String,
     required: true,
+    lowercase: true,
+    trim: true,
     
   },
   role: {
@@ -35,6 +41,8 @@ const userSchema = new Schema({
  
   address: {
     type: String,
+    lowercase: true,
+    trim: true,
   },
 
   dob: {
@@ -44,6 +52,8 @@ const userSchema = new Schema({
   },
   employer: {
     type: String,
+    lowercase: true,
+    trim: true,
   },
   membership_type: { 
     type: String,
@@ -83,7 +93,7 @@ const userSchema = new Schema({
      default: false 
   },
   
-}); 
+}, { timestamps: true }); 
 
 userSchema.pre("save", async function (next) {
   if(this.isModified("password")) {
