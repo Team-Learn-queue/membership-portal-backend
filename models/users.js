@@ -57,10 +57,9 @@ const userSchema = new Schema({
   },
   membership_type: { 
     type: String,
-    enum:{ 
-      values: ['Student', 'Graduate', 'Corporate'],
-       message: '{VALUE} is not an option'
-      },
+    lowercase: true,
+    trim: true,
+
     
   },
   years_of_exp: {

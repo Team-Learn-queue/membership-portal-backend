@@ -220,7 +220,7 @@ const createEvent = async (req, res) => {
   const { name, members, venue, start_date, end_date, reminder } = req.body;
   const event = Event({
     name,
-    members,
+    members: typeof members === 'string' ? members.toLowerCase() : members.map(member => member.toLowerCase()),
     venue,
     start_date,
     end_date,
@@ -228,7 +228,7 @@ const createEvent = async (req, res) => {
   });
   try {
     await event.save();
-    return res.json(event);
+    return res.json(event); 
   } catch (err) {
     console.log(err);
     return res.status(500).json({ message: "Something went wrong, Please try again" });
