@@ -55,7 +55,7 @@ mongoose
 
     } 
   ).then(() => {
-    const server = app.listen(process.env.PORT || 8080);
+    const server = app.listen(process.env.PORT || 8000);
     const io = require("./socket").init(server, {
       cors: {
         origin:  url,

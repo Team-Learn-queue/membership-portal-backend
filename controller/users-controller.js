@@ -510,19 +510,24 @@ const userBills = async (req, res) => {
 const getCert = async (req, res) => {
   const user = await User.findById(req.userData.userId);
   try {
-    const { id } = req.params;
     const bill = await Bill.findOne(
-      { individual: user._id, bill_name: "annual membership certificate" },
-      "individual status validUntil"
+      {
+        individual: user._id,
+        bill_name: {
+          $regex: /annual membership certificate/i
+        }
+      },
+      "individual status validUntil bill_name"
     ).populate({
       path: "individual",
-      select: "first_name last_name membership_type ",
+      select: "first_name last_name membership_type",
     });
     if (!bill) return res.status(404).json({ error: "Bill not found" });
     if (bill.status === "unpaid") return res.status(400).json({ error: "Bill not paid" });
     if (bill.validUntil < Date.now()) return res.status(400).json({ error: "Certificate expired" });
-    if (!bill.name === "annual membership certificate") return res.status(400).json({ error: "You have not paid for certificate yet" });
-    const b = {
+    if (!/^annual membership certificate$/i.test(bill.bill_name)) {
+      return res.status(400).json({ error: "You have not paid for certificate yet" });
+    }    const b = {
       name: `${bill.individual.first_name} ${bill.individual.last_name}`,
       validUntil: bill.validUntil,
       category: bill.individual.membership_type,
@@ -610,7 +615,7 @@ const webhook = async (req, res) => {
       bill.bill_amount = amount;
       bill.transaction_ref = reference;
       bill.mode_of_payment = channel;
-      if (bill.name === "annual membership certificate") {
+      if (/^annual membership certificate$/i.test(bill.bill_name)) {
         bill.validUntil = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
       }
       bill.save();
