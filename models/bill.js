@@ -35,6 +35,9 @@ const billSchema = new Schema(
       },
       default: "unpaid",
     },
+    dateIssued: {
+      type: Date
+    },
     validUntil: {
       type: Date,
     },

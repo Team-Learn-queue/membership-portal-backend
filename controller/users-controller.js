@@ -47,6 +47,19 @@ if (environment === "development") {
   url = "http://portal.anstesters.com";
 }
 
+const generateOTP = () => {
+  let otp = ''
+
+  for(let i = 0; i <=7; i++) {
+    const randVal = Math.round(Math.random() * 9)
+    otp = otp + randVal
+  }
+
+ return otp
+}
+
+
+
 const signup = async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -87,7 +100,6 @@ const signup = async (req, res) => {
   // license_status === "Unlicensed"
   //   ? (confirmStatus = null)
   //   : (confirmStatus = regulator);
-
   const user = User({
     first_name,
     last_name,
@@ -99,6 +111,7 @@ const signup = async (req, res) => {
     address,
     years_of_exp,
     membership_type,
+    membership_id : generateOTP()
   });
   user
     .save()
@@ -509,7 +522,7 @@ const userBills = async (req, res) => {
 
 const getCert = async (req, res) => {
   const user = await User.findById(req.userData.userId);
-  try {
+    try {
     const bill = await Bill.findOne(
       {
         individual: user._id,
@@ -520,22 +533,26 @@ const getCert = async (req, res) => {
       "individual status validUntil bill_name"
     ).populate({
       path: "individual",
-      select: "first_name last_name membership_type",
+      select: "first_name last_name membership_type membership_id",
     });
     if (!bill) return res.status(404).json({ error: "Bill not found" });
     if (bill.status === "unpaid") return res.status(400).json({ error: "Bill not paid" });
     if (bill.validUntil < Date.now()) return res.status(400).json({ error: "Certificate expired" });
     if (!/^annual membership certificate$/i.test(bill.bill_name)) {
       return res.status(400).json({ error: "You have not paid for certificate yet" });
-    }    const b = {
+    }    
+    const data = {
       name: `${bill.individual.first_name} ${bill.individual.last_name}`,
       validUntil: bill.validUntil,
+      issuedDate: bill.dateIssued,
       category: bill.individual.membership_type,
+      membership_id: bill.individual.membership_id
     };
-    const pdf = await generateCertificate(b);
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition",`attachment; filename="membership_certificate.pdf"`);
-    res.send(pdf);
+    res.json(data)
+    // const pdf = await generateCertificate(b);
+    // res.setHeader("Content-Type", "application/pdf");
+    // res.setHeader("Content-Disposition",`attachment; filename="membership_certificate.pdf"`);
+    // res.send(pdf);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -560,7 +577,6 @@ async function generateCertificate(user) {
 
 const pay = async (req, res) => {
   try {
-    const { amount } = req.body;
     const user = await User.findById(req.userData.userId);
     if (!user) return res.status(404).json({ message: "No user found" });
     const bill = await Bill.findOne({
@@ -572,7 +588,7 @@ const pay = async (req, res) => {
         // Create Paystack payment request
     const { data } = await paystack.post("/transaction/initialize", {
       email: user.email,
-      amount: amount * 100,
+      amount: bill.bill_amount * 100,
       metadata: {
         billId: bill.id,
       },
@@ -616,6 +632,7 @@ const webhook = async (req, res) => {
       bill.transaction_ref = reference;
       bill.mode_of_payment = channel;
       if (/^annual membership certificate$/i.test(bill.bill_name)) {
+        bill.dateIssued =  new Date()
         bill.validUntil = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
       }
       bill.save();
@@ -625,6 +642,33 @@ const webhook = async (req, res) => {
   }
   res.status(200).send("OK");
 };
+
+
+const getReciept = async (req, res) => {
+  try {
+    const user = await User.findById(req.userData.userId);
+    if (!user) return res.status(404).json({ message: "No user found" });
+    const bill = await Bill.findOne({
+      _id: req.params.billId,
+      individual: user._id,
+    }); 
+    
+    if (!bill) return res.status(404).json({ message: "No bill found" });
+
+    res.json({
+      name: `${user.first_name} ${user.last_name}`,
+      transactionReference: bill.transaction_ref,
+      ReceiptName: bill.bill_name,
+      paymentMethod: bill.mode_of_payment,
+      amount:bill.bill_amount,
+      dateOfTransaction: bill.dateIssued,
+      paymentStatus: bill.status
+    })
+  }catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+}
 
 const userEvents = async (req, res) => {
   let user;
@@ -659,4 +703,5 @@ module.exports = {
   pay,
   webhook,
   userEvents,
+  getReciept
 };

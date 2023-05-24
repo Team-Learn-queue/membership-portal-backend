@@ -59,8 +59,9 @@ const userSchema = new Schema({
     type: String,
     lowercase: true,
     trim: true,
-
-    
+  },
+  membership_id: {
+    type: Number
   },
   years_of_exp: {
     type: Number
