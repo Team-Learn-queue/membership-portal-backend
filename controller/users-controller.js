@@ -530,7 +530,7 @@ const getCert = async (req, res) => {
           $regex: /annual membership certificate/i
         }
       },
-      "individual status validUntil bill_name"
+      "individual status validUntil dateIssued  bill_name"
     ).populate({
       path: "individual",
       select: "first_name last_name membership_type membership_id",
