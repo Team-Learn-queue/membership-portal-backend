@@ -44,7 +44,7 @@ let url;
 if (environment === "development") {
   url = "http://localhost:3000";
 } else {
-  url = "http://portal.anstesters.com";
+  url = "http://portal-anstesters.netlify.app";
 }
 
 const generateOTP = () => {

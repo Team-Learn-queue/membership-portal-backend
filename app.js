@@ -5,9 +5,12 @@ const path = require("path");
 const usersRoutes = require("./routes/users-routes");
 const adminRoutes = require("./routes/admin-routes");
 const discussionRoutes = require("./routes/discussion");
+const voteRoutes = require("./routes/vote-routes");
 
 const app = express();
 app.use(express.json());
+app.use(express.urlencoded({extended: false}))
+
 app.use("/uploads/files", express.static(path.join("uploads", "files")));
 
 dotenv.config();
@@ -16,7 +19,7 @@ let url
 if(environment === 'development') {
  url = 'http://localhost:3000/'
 }else {
-  url = 'http://portal.anstesters.com/'
+  url = 'http://portal-anstesters.netlify.app/'
 }
 app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -32,6 +35,8 @@ app.use((req, res, next) => {
 app.use("/api/users", usersRoutes.router);
 app.use("/api/admin", adminRoutes.router);
 app.use("/api/discussion", discussionRoutes.router);
+app.use("/api/vote", voteRoutes.router);
+
 
 app.use((req, res, next) => {
   return res
