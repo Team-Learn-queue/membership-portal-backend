@@ -5,6 +5,7 @@ const path = require("path");
 const usersRoutes = require("./routes/users-routes");
 const adminRoutes = require("./routes/admin-routes");
 const discussionRoutes = require("./routes/discussion");
+const voteRoutes = require("./routes/voting-routes");
 
 const app = express();
 app.use(express.json());
