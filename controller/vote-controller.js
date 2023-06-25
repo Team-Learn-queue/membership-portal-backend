@@ -3,6 +3,8 @@ const Item = require("../models/voteItem");
 const Poll = require("../models/poll");
 const cloudinary = require("cloudinary").v2;
 const { validationResult } = require("express-validator");
+const HttpError = require("../models/http-error");
+
 
 cloudinary.config({
   cloud_name: process.env.CLOUD_NAME,
@@ -10,7 +12,7 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_SECRET_KEY,
 });
 
-const setPoll = async (req, res) => {
+const setPoll = async (req, res, next) => {
   if (req.userData.role === "user")
     return next(HttpError("You are unauthorized for this operation", 403));
   const errors = validationResult(req);
@@ -18,19 +20,20 @@ const setPoll = async (req, res) => {
     const message = errors.errors[0].msg;
     return res.status(400).json({ message: message });
   }
-  const { title, startDate, endDate, items } = req.body;
-  const poll = await Poll.create({ title, startDate, endDate });
 
-  let images = [];
-  if (req.files && req.files.length > 0) {
-    for (const file of req.files) {
-      const result = await cloudinary.uploader.upload(file.path, {
-        folder: "anstesters-vote-image",
-      });
-      images.push(result.secure_url);
-    }
-  }
   try {
+    const { title, startDate, endDate } = req.body;
+    const poll = await Poll.create({ title, startDate, endDate });
+
+    let images = [];
+    if (req.files && req.files.length > 0) {
+      for (const file of req.files) {
+        const result = await cloudinary.uploader.upload(file.path, {
+          folder: "anstesters-vote-image",
+        });
+        images.push(result.secure_url);
+      }
+    }
     const items = req.body.items.map((vote, index) => ({
       ...vote,
       image: images[index] || null,
@@ -83,7 +86,7 @@ const vote = async (req, res) => {
 const getPoll = async (req, res) => {
   const { pollId } = req.params;
   try {
-    const voteItems = await Poll.findById({_id:pollId}).populate("items");
+    const voteItems = await Poll.findById({ _id: pollId }).populate("items");
     res.json(voteItems);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -122,7 +125,6 @@ const calculatePercentage = async (req, res) => {
     res.status(500).json({ error: "Failed to calculate percentages" });
   }
 };
-
 
 module.exports = {
   setPoll,
