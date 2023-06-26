@@ -35,7 +35,7 @@ try {
   }
 };
 
-const createVote = async (req, res) {
+const createVote = async (req, res) => {
     // Extract necessary data from request body
     const { userId, voteId } = req.body;
 
@@ -44,12 +44,12 @@ const createVote = async (req, res) {
     await vote.save();
 
     res.status(201).json({ success: true, vote });
-  }  
+  };  
   
   
   // Increment the vote number of an option of a poll
   // Returns a 403 if the user already voted
-  const addVote = async (req, res) {
+  const addVote = async (req, res) => {
     var id = req.params.id;
     var optionIndex = req.params.option;
     var username = req.user.name;
