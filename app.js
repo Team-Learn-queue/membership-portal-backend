@@ -2,6 +2,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 const path = require("path");
+const cors = require("cors");
 const usersRoutes = require("./routes/users-routes");
 const adminRoutes = require("./routes/admin-routes");
 const discussionRoutes = require("./routes/discussion");
@@ -9,34 +10,23 @@ const voteRoutes = require("./routes/vote-routes");
 
 const app = express();
 app.use(express.json());
-app.use(express.urlencoded({extended: false}))
-
+app.use(express.urlencoded({ extended: false }));
+app.use(cors());
 app.use("/uploads/files", express.static(path.join("uploads", "files")));
 
 dotenv.config();
 let environment = process.env.NODE_ENV;
-let url 
-if(environment === 'development') {
- url = 'http://localhost:3000/'
-}else {
-  url = 'http://portal-anstesters.netlify.app/'
+let url;
+if (environment === "development") {
+  url = "http://localhost:3000/";
+} else {
+  url = "http://portal-anstesters.netlify.app/";
 }
-app.use((req, res, next) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader(
-    "Access-Control-Allow-Headers",
-    "Origin,X-Requested-With,Content-Type,Accept,Authorization"
-  );
-  res.setHeader("Access-Control-Allow-Methods", "GET,POST,PATCH,DELETE");
-
-  next();
-});
 
 app.use("/api/users", usersRoutes.router);
 app.use("/api/admin", adminRoutes.router);
 app.use("/api/discussion", discussionRoutes.router);
 app.use("/api/vote", voteRoutes.router);
-
 
 app.use((req, res, next) => {
   return res
@@ -57,13 +47,13 @@ mongoose
     {
       useNewUrlParser: true,
       maxPoolSize: 4,
-
-    } 
-  ).then(() => {
+    }
+  )
+  .then(() => {
     const server = app.listen(process.env.PORT || 8000);
     const io = require("./socket").init(server, {
       cors: {
-        origin:  url,
+        origin: url,
         allowedHeaders: ["my-custom-header"],
         credentials: true,
       },
