@@ -536,7 +536,7 @@ const getCert = async (req, res) => {
       select: "first_name last_name membership_type membership_id",
     });
     if (!bill) return res.status(404).json({ error: "Bill not found" });
-    if (bill.status === "unpaid") return res.status(400).json({ error: "Bill not paid" });
+    if (bill.status === "unpaid") return res.status(400).json({ error: "You have not paid for certificate yet" });
     if (bill.validUntil < Date.now()) return res.status(400).json({ error: "Certificate expired" });
     if (!/^annual membership certificate$/i.test(bill.bill_name)) {
       return res.status(400).json({ error: "You have not paid for certificate yet" });
@@ -589,6 +589,7 @@ const pay = async (req, res) => {
     const { data } = await paystack.post("/transaction/initialize", {
       email: user.email,
       amount: bill.bill_amount * 100,
+      channels: ['card'],
       metadata: {
         billId: bill.id,
       },

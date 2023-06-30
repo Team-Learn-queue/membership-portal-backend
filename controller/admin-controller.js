@@ -159,19 +159,33 @@ const getBill = async (req, res) => {
   }
 };
 
-const getExistingBill = async (req, res, next) => {
+const createdBills = async (req, res, next) => {
   if (req.userData.role === "user") return next(HttpError("You are unauthorized for this operation", 403));
   try {
-    const bill = await Bill.find({ status: "unpaid" },"  bill_name bill_amount status createdAt")
-      .populate({path: "individual",select: "first_name last_name "})
-      .exec();
-    return res.json(bill);
+    const billNames = await Bill.distinct("bill_name");
+    const bills = await Promise.all(billNames.map(async (billName) => {
+      const bill = await Bill.findOne({ bill_name: billName }, "bill_name bill_amount createdAt").exec();
+      return bill;
+    }));
+    return res.json(bills);
   } catch (err) {
     console.log(err);
     return res.status(500).json({ message: "Something went wrong, Please try again" });
   }
 };
 
+// const existingBills = async (req, res, next) => {
+//   if (req.userData.role === "user") return next(HttpError("You are unauthorized for this operation", 403));
+//   try {
+//     const bill = await Bill.find({ status: "unpaid" },"  bill_name bill_amount status createdAt")
+//       .populate({path: "individual",select: "first_name last_name "})
+//       .exec();
+//     return res.json(bill);
+//   } catch (err) {
+//     console.log(err);
+//     return res.status(500).json({ message: "Something went wrong, Please try again" });
+//   }
+// };
 const getPaidBills = async (req, res, next) => {
   if (req.userData.role === "user") return next(HttpError("You are unauthorized for this operation", 403));
   try {
@@ -254,7 +268,7 @@ module.exports = {
   createBills,
   usersBills,
   getBill,
-  getExistingBill,
+  createdBills,
   getPaidBills,
   downloadPaymentReport,
   createEvent,
