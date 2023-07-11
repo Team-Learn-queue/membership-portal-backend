@@ -56,9 +56,12 @@ exports.verifyEmailTemplate = (user, emailLink) => ({
   "
 >
  
-  <p style="margin-top: 20px;font-family: 'Poppins';">Hello ${user.first_name} ${user.last_name},</p>
+  <p style="margin-top: 20px;font-family: Poppins; text-transform: capitalize;">Hello ${user.first_name} ${user.last_name},</p>
   <p style="margin-top: 20px;font-family: 'Poppins';">
-    Thank you for joining ANSTESTERS , We are glad to have you.
+    Thank you for joining ANSTESTERS and we are pleased to welcome you as registered user.
+  </p>
+  <p style="margin-top: 20px;font-family: 'Poppins';">
+    Kindly click on the button below to confirm your account.
   </p>
   <div style="margin-top: 70px">
     <a
@@ -89,7 +92,7 @@ exports.verifyEmailTemplate = (user, emailLink) => ({
 exports.forgotEmailTemplate = (user, resetLink) => ({
   from: "ANSTESTERS <riliwanademola72@gmail.com>",
   to: user.email,
-  subject: "Password Reset",
+  subject: "You Have Requested to Reset Your Password",
   html: `<html>
   <head>
     <title>Email Template</title>
@@ -106,8 +109,13 @@ exports.forgotEmailTemplate = (user, resetLink) => ({
     text-align: center;
   "
 >
+<p style="margin-top: 20px;font-family: 'Poppins'; text-transform: capitalize;">Hello ${user.first_name} ${user.last_name},</p>
+<p style="margin-top: 20px;font-family: 'Poppins';">
+  We received a request for password reset for your account as a user.
+</p>
+
     
-    <p style="margin-top: 20px">You requested a Password Reset</p>
+    
     <p style="margin-top: 20px">Please click on the link and follow the process.</p>
     <div style="margin-top: 70px">
       <a
@@ -187,7 +195,7 @@ exports.verifiedTemplate = (user) => ({
   "
 >
    
-    <p style="margin-top: 20px"> ${user.first_name}, You welcome to ANSTESTERS Forum</p>
+    <p style="margin-top: 20px" text-transform: capitalize;> ${user.first_name}, You welcome to ANSTESTERS Forum</p>
     <p style="margin-top: 20px">Thank you for connecting with us.</p>
 
     </div>

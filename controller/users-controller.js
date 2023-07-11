@@ -510,7 +510,7 @@ const getNewBill = async (req, res) => {
 const userBills = async (req, res) => {
   let user;
   try {
-    user = await User.findById(req.userData.userId, "bills")
+    user = await User.findById(req.userData.userId)
       .populate({path: "bills", select: "bill_name bill_amount status createdAt"})
       .exec();
    return  res.json(user);
