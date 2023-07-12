@@ -38,7 +38,7 @@ router.get("/users-bills", auth, adminController.usersBills);
 router.get("/get-bill/:id", auth, adminController.getBill);
 router.get("/created-bills", auth, adminController.createdBills);
 
-// router.get("/existing-bills", auth, adminController.createBills);
+router.get("/existing-bills", auth, adminController.existingBills);
 router.get("/paid-bills", auth, adminController.getPaidBills);
 router.get("/download-report", auth, adminController.downloadPaymentReport);
 router.post("/add-event", auth,[
