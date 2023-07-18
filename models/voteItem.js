@@ -4,9 +4,11 @@ const itemSchema = new mongoose.Schema({
   image: {
     type: String,
   },
+  name: {
+    type: String,
+  },
   description: {
     type: String,
-    required: true
   },
   votes: {
     type: Number,

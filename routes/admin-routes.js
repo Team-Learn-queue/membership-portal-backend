@@ -40,6 +40,7 @@ router.get("/created-bills", auth, adminController.createdBills);
 
 router.get("/existing-bills", auth, adminController.existingBills);
 router.get("/paid-bills", auth, adminController.getPaidBills);
+router.get("/unpaid-bills", auth, adminController.getUnpaidBills);
 router.get("/download-report", auth, adminController.downloadPaymentReport);
 router.post("/add-event", auth,[
     check("name").not().isEmpty().withMessage("Name of event is required"),
