@@ -18,6 +18,7 @@ router.post("/set-poll", upload.array("images", 10), [
   check("items").isArray({ min: 1 }).withMessage("At least one item is required"),
 ], auth, voteController.setPoll); 
 router.put('/polls/:pollId/vote',auth, voteController.vote)
+router.get('/polls',auth, voteController.getPolls)
 router.get('/polls/:pollId',auth, voteController.getPoll)
 router.get('/polls/total-percentage/:pollId',auth, voteController.calculatePercentage)
 

@@ -82,6 +82,17 @@ const vote = async (req, res) => {
   }
 };
 
+const getPolls = async (req, res) => {
+  const { pollId } = req.params;
+  try {
+    const voteItems = await Poll.find({}).populate("items");
+    res.json(voteItems);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+
 const getPoll = async (req, res) => {
   const { pollId } = req.params;
   try {
@@ -130,4 +141,5 @@ module.exports = {
   getPoll,
   vote,
   calculatePercentage,
+  getPolls
 };
