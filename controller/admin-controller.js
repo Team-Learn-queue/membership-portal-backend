@@ -132,7 +132,7 @@ const createBills = async (req, res, next) => {
   return res.status(201).json({ message: "Bill assigned sucessfully" });
 };
 
-const usersBills = async (req, res) => {
+const usersBills = async (req, res,next) => {
   if (req.userData.role === "user") return next(HttpError("You are unauthorized for this operation", 403));
   try {
     const bills = await Bill.find({},"bill_name bill_amount status createdAt")
@@ -145,7 +145,7 @@ const usersBills = async (req, res) => {
   }
 };
 
-const getBill = async (req, res) => {
+const getBill = async (req, res,next) => {
   if (req.userData.role === "user") return next(HttpError("You are unauthorized for this operation", 403));
   try {
     const bill = await Bill.findById(req.params.id,"bill_name bill_amount status createdAt")
@@ -238,7 +238,7 @@ const downloadPaymentReport = async (req, res, next) => {
   }
 };
 
-const createEvent = async (req, res) => {
+const createEvent = async (req, res,next) => {
   if (req.userData.role === "user") return next(HttpError("You are unauthorized for this operation", 403));
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -263,7 +263,7 @@ const createEvent = async (req, res) => {
   }
 };
 
-const getEvents = async (req, res) => {
+const getEvents = async (req, res, next) => {
   if (req.userData.role === "user") return next(HttpError("You are unauthorized for this operation", 403));
   try {
     const events = await Event.find({});
