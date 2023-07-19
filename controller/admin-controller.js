@@ -37,14 +37,19 @@ const getUser = (req, res, next) => {
 };
 
 const exportData = async (req, res, next) => {
-  if (req.userData.role === "user") return next(HttpError("You are unauthorized for this operation", 403));
-  User.find({}, "first_name last_name address phone_number employer years_of_exp membership_type role email")
-    .then((data) => {const headers = Object.keys(data[0].toObject());
-      const csvData = csv.stringify([headers,...data.map((item) => Object.values(item.toObject()))]);
-      fs.writeFileSync("users.csv", csvData);
-      res.download("users.csv");
-    })
-    .catch((error) => {res.status(500).json({ error })});
+  if (req.userData.role === "user") return next(new HttpError("You are unauthorized for this operation", 403));
+
+  try {
+    const data = await User.find({}, "first_name last_name address phone_number employer years_of_exp membership_type role email");
+    const headers = Object.keys(data[0].toObject());
+    const csvData = csv.stringify([headers, ...data.map((item) => Object.values(item.toObject()))]);
+    
+    res.setHeader("Content-Type", "text/csv");
+    res.setHeader("Content-Disposition", "attachment; filename=users.csv");
+    res.send(csvData);
+  } catch (error) {
+    res.status(500).json({ error, message:"Something went wrong, Please try again" });
+  }
 };
 
 // const getUserFiles = async (req, res) => {
