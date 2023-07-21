@@ -11,12 +11,12 @@ const upload = multer({ storage , fileFilter: function(req, file, callback) {
   callback(null, true);
 }})
 const router = express.Router();
-router.post("/set-poll", upload.array("images", 10), [
+router.post("/set-poll", upload.array("images", 10), auth, [
   check("title").not().isEmpty().withMessage("Poll Title is required"),
   check("startDate").not().isEmpty().withMessage("Start Date is required"),
   check("endDate").not().isEmpty().withMessage("End Date is required"),
   check("items").isArray({ min: 1 }).withMessage("At least one item is required"),
-], auth, voteController.setPoll); 
+], voteController.setPoll); 
 router.put('/polls/:pollId/vote',auth, voteController.vote)
 router.get('/polls',auth, voteController.getPolls)
 router.get('/polls/:pollId',auth, voteController.getPoll)
