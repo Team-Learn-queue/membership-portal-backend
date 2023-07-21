@@ -13,6 +13,7 @@ const upload = multer({ storage , fileFilter: function(req, file, callback) {
 const router = express.Router();
 router.post("/set-poll", upload.array("images", 10), auth, [
   check("title").not().isEmpty().withMessage("Poll Title is required"),
+  check("category").not().isEmpty().withMessage("Poll Category is required"),
   check("startDate").not().isEmpty().withMessage("Start Date is required"),
   check("endDate").not().isEmpty().withMessage("End Date is required"),
   check("items").isArray({ min: 1 }).withMessage("At least one item is required"),

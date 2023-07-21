@@ -21,8 +21,8 @@ const setPoll = async (req, res, next) => {
   }
 
   try {
-    const { title, startDate, endDate } = req.body;
-    const poll = await Poll.create({ title, startDate, endDate });
+    const { title, startDate, endDate,category } = req.body;
+    const poll = await Poll.create({ title, startDate, endDate,category });
 
     let images = [];
     if (req.files && req.files.length > 0) {

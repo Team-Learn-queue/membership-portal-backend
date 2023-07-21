@@ -5,6 +5,10 @@ const pollSchema = new mongoose.Schema({
       type: String,
       required: true
     },
+    category: {
+      type: String,
+      required: true
+    },
     startDate: {
       type: Date,
       required: true
