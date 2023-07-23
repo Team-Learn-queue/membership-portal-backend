@@ -143,11 +143,9 @@ const login = async (req, res, next) => {
   try {
     isValidPassword = await existingUser.comparePassword(password);
   } catch (err) {
-    return res
-      .status(500)
-      .json({
-        message: "Something went wrong, could not log you in. Please try again",
-      });
+    return res.status(500).json({
+      message: "Something went wrong, could not log you in. Please try again",
+    });
   }
   if (!isValidPassword) {
     return res
@@ -188,13 +186,17 @@ const verifyEmail = async (req, res) => {
     const user = await User.findOne({ email: req.query.email });
 
     if (user.isVerified) {
-      return res.json({ message: "User has already been verified. Please login." });
+      return res.json({
+        message: "User has already been verified. Please login.",
+      });
     }
 
     const token = await VerificationToken.findOne({ token: req.query.token });
 
     if (!token) {
-      return res.status(403).json({ message: "Your verification link may have expired." });
+      return res
+        .status(403)
+        .json({ message: "Your verification link may have expired." });
     }
 
     const existingUser = await User.findOne({
@@ -218,7 +220,9 @@ const verifyEmail = async (req, res) => {
       });
     }
   } catch (error) {
-    return res.status(500).json({ message: "Verification of Email Failed. Please try again." });
+    return res
+      .status(500)
+      .json({ message: "Verification of Email Failed. Please try again." });
   }
 };
 
@@ -238,11 +242,9 @@ const resendLink = async (req, res) => {
   }
   if (!user) return res.status(404).json({ message: "User not found" });
   if (user.isVerified)
-    return res
-      .status(203)
-      .json({
-        message: "This Account has already been verified, Please Log in",
-      });
+    return res.status(203).json({
+      message: "This Account has already been verified, Please Log in",
+    });
   const randomBytes = crypto.randomBytes(16).toString("hex");
   const token = VerificationToken({
     userId: user._id,
@@ -259,11 +261,9 @@ const resendLink = async (req, res) => {
             .status(500)
             .json({ message: "Error sending email", error });
         } else {
-          return res
-            .status(200)
-            .json({
-              message: `${user.first_name} ${user.last_name} a verification email has been sent to ${user.email}`,
-            });
+          return res.status(200).json({
+            message: `${user.first_name} ${user.last_name} a verification email has been sent to ${user.email}`,
+          });
         }
       });
     })
@@ -325,7 +325,9 @@ const resetPassword = async (req, res) => {
 
     const samePass = await user.comparePassword(newPassword);
     if (samePass) {
-      return res.status(403).json({ message: "New Password must be different" });
+      return res
+        .status(403)
+        .json({ message: "New Password must be different" });
     }
 
     user.password = newPassword.trim();
@@ -547,6 +549,37 @@ const userBills = async (req, res) => {
   }
 };
 
+const userPaidBills = async (req, res) => {
+  try {
+    const bills = await Bill.find(
+      { individual: req.userData.userId, status: "paid" })
+      .populate({ path: "individual", select: "first_name last_name " })
+      .exec();
+    return res.json(bills);
+  } catch (err) {
+    console.log(err);
+    return res
+      .status(500)
+      .json({ message: "Something went wrong, Please try again" });
+  }
+};
+
+
+const userUnpaidBills = async (req, res) => {
+  try {
+    const bills = await Bill.find(
+      { individual: req.userData.userId, status: "unpaid" })
+      .populate({ path: "individual", select: "first_name last_name " })
+      .exec();
+    return res.json(bills);
+  } catch (err) {
+    console.log(err);
+    return res
+      .status(500)
+      .json({ message: "Something went wrong, Please try again" });
+  }
+};
+
 const getCert = async (req, res) => {
   const user = await User.findById(req.userData.userId);
   try {
@@ -654,7 +687,7 @@ const webhook = async (req, res) => {
   const event = req.body.event;
   switch (event) {
     case "charge.success":
-      const { customer, channel, reference} = req.body.data;
+      const { customer, channel, reference } = req.body.data;
       const user = await User.findOne({ email: customer.email });
       if (!user) return res.status(404).json({ message: "No user found" });
       const bill = await Bill.findOne({
@@ -739,4 +772,6 @@ module.exports = {
   webhook,
   userEvents,
   getReciept,
+  userPaidBills,
+  userUnpaidBills
 };
