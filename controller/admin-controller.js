@@ -84,10 +84,10 @@ const createBills = async (req, res, next) => {
   const { bill_name, bill_amount, individual, group } = req.body;
   if (!individual && !group) return res.json({ message: "Bill is not assigned to anyone." });
   if (individual) {
-    if (!isValidObjectId(individual))
-      return res.status(404).json({ message: "User not found" });
+    // if (!isValidObjectId(individual))
+    //   return res.status(404).json({ message: "User not found" });
     try {
-      existingUser = await User.findOne({ _id: individual, isVerified: true });
+      existingUser = await User.findOne({ membership_id: individual, isVerified: true });
     } catch (err) {
       return res.status(500).json({ message: " Something went wrong. Please try again" });
     }
@@ -168,10 +168,10 @@ const createdBills = async (req, res, next) => {
   if (req.userData.role === "user") return next(HttpError("You are unauthorized for this operation", 403));
   try {
     const billNames = await Bill.distinct("bill_name");
-    const bills = await Promise.all(billNames.map(async (billName) => {
-      const bill = await Bill.findOne({ bill_name: billName }, "bill_name bill_amount createdAt").exec();
-      return bill;
-    }));
+    const bills = await Bill.find({ bill_name: { $in: billNames } }, "bill_name bill_amount createdAt")
+      .sort({ createdAt: -1 }) // Sort by createdAt field in descending order
+      .exec();
+
     return res.json(bills);
   } catch (err) {
     console.log(err);
@@ -271,7 +271,7 @@ const createEvent = async (req, res,next) => {
 const getEvents = async (req, res, next) => {
   if (req.userData.role === "user") return next(HttpError("You are unauthorized for this operation", 403));
   try {
-    const events = await Event.find({});
+    const events = await Event.find({}.sort({ createdAt: -1 }));
     return res.json(events);
   } catch (err) {
     console.log(err);

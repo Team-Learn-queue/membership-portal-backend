@@ -741,7 +741,7 @@ const userEvents = async (req, res) => {
   let event;
   try {
     user = await User.findById(req.userData.userId);
-    event = await Event.find({ members: user.membership_type });
+    event = await Event.find({ members: user.membership_type }).sort({ createdAt: -1 })
     res.json(event);
   } catch (err) {
     console.log(err);
