@@ -175,7 +175,7 @@ const login = async (req, res, next) => {
   }
   return res.status(202).json({
     message: `Login Sucessful`,
-    userObject: { userId: existingUser.id, role: existingUser.role },
+    userObject: { userId: existingUser.id, role: existingUser.role, membershipId: existingUser.membership_id },
     token: token,
   });
 };
