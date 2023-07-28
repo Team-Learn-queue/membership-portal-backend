@@ -271,7 +271,7 @@ const createEvent = async (req, res,next) => {
 const getEvents = async (req, res, next) => {
   if (req.userData.role === "user") return next(HttpError("You are unauthorized for this operation", 403));
   try {
-    const events = await Event.find({}.sort({ createdAt: -1 }));
+    const events = await Event.find({}).sort({ createdAt: -1 });
     return res.json(events);
   } catch (err) {
     console.log(err);
