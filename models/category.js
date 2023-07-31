@@ -1,19 +1,27 @@
-const mongoose = require("mongoose");
-const Schema = mongoose.Schema;
+const mongoose = require('mongoose');
 
-const categorySchema = new Schema({
-    user: {
-      type: Schema.Types.ObjectId,
-      required: true,
-      ref: "User",
+const categorySchema = new mongoose.Schema({
+    categoryName: {
+      type: String,
+      required: true
     },
-    category:{type: String,
-    enum:{ 
-      values: ['Student', 'Graduate', 'Corporate'],
-       message: '{VALUE} is not an option'
-      },
-    required: true
-   }
+    startDate: {
+      type: Date,
+      required: true
+    },
+    endDate: {
+      type: Date,
+      required: true 
+    },
+    items: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Item'
+    }],
+    votedBy: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }],
   });
-
-  module.exports = mongoose.model("Category", categorySchema);
+  
+  
+  module.exports = mongoose.model('Category', categorySchema);

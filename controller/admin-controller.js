@@ -21,34 +21,55 @@ connection.once("open", () => {
   });
 });
 const getUsers = async (req, res, next) => {
-  if (req.userData.role === "user") return next(HttpError("You are unauthorized for this operation", 403));
+  if (req.userData.role === "user")
+    return next(HttpError("You are unauthorized for this operation", 403));
   User.find({ isVerified: true }, " -__v")
-    .then((users) => {return res.status(200).json({ users });})
-    .catch((e) => {return res.status(500).json({ message: "Cannot find users" })});
+    .then((users) => {
+      return res.status(200).json({ users });
+    })
+    .catch((e) => {
+      return res.status(500).json({ message: "Cannot find users" });
+    });
 };
 
 const getUser = (req, res, next) => {
-  if (req.userData.role === "user") return next(HttpError("You are unauthorized for this operation", 403));
+  if (req.userData.role === "user")
+    return next(HttpError("You are unauthorized for this operation", 403));
   const userId = req.params.uid.replace(/\s+/g, " ").trim();
   User.findById(userId)
-    .then((user) => {if (!user) return res.status(404).json({ message: "No user found" });
-       return res.status(201).json(user);})
-    .catch(() => {return res.status(500).json({ message: "Something went wrong , Please try again" })});
+    .then((user) => {
+      if (!user) return res.status(404).json({ message: "No user found" });
+      return res.status(201).json(user);
+    })
+    .catch(() => {
+      return res
+        .status(500)
+        .json({ message: "Something went wrong , Please try again" });
+    });
 };
 
 const exportData = async (req, res, next) => {
-  if (req.userData.role === "user") return next(new HttpError("You are unauthorized for this operation", 403));
+  if (req.userData.role === "user")
+    return next(new HttpError("You are unauthorized for this operation", 403));
 
   try {
-    const data = await User.find({}, "first_name last_name address phone_number employer years_of_exp membership_type role email");
+    const data = await User.find(
+      {},
+      "first_name last_name address phone_number employer years_of_exp membership_type role email"
+    );
     const headers = Object.keys(data[0].toObject());
-    const csvData = csv.stringify([headers, ...data.map((item) => Object.values(item.toObject()))]);
-    
+    const csvData = csv.stringify([
+      headers,
+      ...data.map((item) => Object.values(item.toObject())),
+    ]);
+
     res.setHeader("Content-Type", "text/csv");
     res.setHeader("Content-Disposition", "attachment; filename=users.csv");
     res.send(csvData);
   } catch (error) {
-    res.status(500).json({ error, message:"Something went wrong, Please try again" });
+    res
+      .status(500)
+      .json({ error, message: "Something went wrong, Please try again" });
   }
 };
 
@@ -64,166 +85,241 @@ const exportData = async (req, res, next) => {
 // };
 
 const upload = async (req, res) => {
-  if (req.userData.role === "user") return res.status(403).json({ message: "You are unauthorized for this operation" });
-  if (req.fileValidationError) return res.status(422).json({ message: req.fileValidationError });
-  if (!req.files || req.files.length <= 0) return res.status(422).json({ message: "No Image Provided" });
+  if (req.userData.role === "user")
+    return res
+      .status(403)
+      .json({ message: "You are unauthorized for this operation" });
+  if (req.fileValidationError)
+    return res.status(422).json({ message: req.fileValidationError });
+  if (!req.files || req.files.length <= 0)
+    return res.status(422).json({ message: "No Image Provided" });
   // if (!isValidObjectId(req.userData.userId))
   //   return res.status(404).json({ message: "Invalid UserId" });
   res.status(201).json({ message: "File Uploaded Sucessfully" });
 };
 
 const createBills = async (req, res, next) => {
-  if (req.userData.role === "user") return next(HttpError("You are unauthorized for this operation", 403));
+  if (req.userData.role === "user")
+    return next(HttpError("You are unauthorized for this operation", 403));
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     const message = errors.errors[0].msg;
     return res.status(400).json({ message: message });
   }
-  let existingUser;
-  let groupUsers;
-  const { bill_name, bill_amount, individual, group } = req.body;
-  if (!individual && !group) return res.json({ message: "Bill is not assigned to anyone." });
-  if (individual) {
-    // if (!isValidObjectId(individual))
-    //   return res.status(404).json({ message: "User not found" });
+  let existingUsers = [];
+  let groupUsers = [];
+  const { bill_name, bill_amount, individuals, group } = req.body;
+  if (!individuals && !group)
+    return res.json({ message: "Bill is not assigned to anyone." });
+
+  // Handle individual users
+  if (individuals && Array.isArray(individuals)) {
     try {
-      existingUser = await User.findOne({ membership_id: individual, isVerified: true });
+      existingUsers = await User.find({
+        membership_id: { $in: individuals },
+        isVerified: true,
+      });
     } catch (err) {
-      return res.status(500).json({ message: " Something went wrong. Please try again" });
+      return res
+        .status(500)
+        .json({ message: "Something went wrong. Please try again" });
     }
-    if (!existingUser)
-      return res.status(422).json({message: `User with id ${individual} not found or user is yet to be verified`});
   }
-  try {
-    if (group) {
-      groupUsers = await User.find({membership_type: { $in: group },isVerified: true});
+
+  // Handle group users
+  if (group) {
+    try {
+      groupUsers = await User.find({
+        membership_type: { $in: group },
+        isVerified: true,
+      });
+    } catch (err) {
+      return res
+        .status(500)
+        .json({
+          message: "Something went wrong. Please try again",
+          error: err,
+        });
     }
-  } catch (err) {
-    return res.status(500).json({ message: " Something went wrong. Please try again", error: err });
   }
-  const checkUser = existingUser ? existingUser.id : null;
-  if (existingUser) {
+
+  // Save bills for individual users
+  const individualPromises = existingUsers.map(async (user) => {
     const bill = Bill({
       bill_name,
       bill_amount,
-      individual: checkUser,
+      individual: user.id,
     });
     try {
       await bill.save();
+      user.bills.push(bill);
+      await user.save();
     } catch (err) {
       return res.json({ message: "Something went wrong", e: err });
     }
-    existingUser.bills.push(bill);
-    await existingUser.save();
-  }
-  if (group && groupUsers.length > 0) {
+  });
+
+  // Save bills for group users
+  const groupPromises = groupUsers.map(async (user) => {
+    const bill = Bill({
+      bill_name,
+      bill_amount,
+      individual: user.id,
+    });
     try {
-      const promises = groupUsers.map(async (user) => {
-        const bill = Bill({
-          bill_name,
-          bill_amount,
-          individual: user.id,
-        });
-        let b = await bill.save();
-        user.bills.push(b);
-        user.save();
-      });
-      await Promise.all(promises);
+      let b = await bill.save();
+      user.bills.push(b);
+      await user.save();
     } catch (e) {
-      return res.status(500).json({ message: "Error in assigning bills to group", err: e });
+      return res
+        .status(500)
+        .json({ message: "Error in assigning bills to group", err: e });
     }
+  });
+
+  try {
+    await Promise.all([...individualPromises, ...groupPromises]);
+  } catch (e) {
+    return res
+      .status(500)
+      .json({ message: "Error in assigning bills", err: e });
   }
-  if (!existingUser && groupUsers.length === 0) return res.json({ message: "Bill is not assigned to anyone!." });
-  return res.status(201).json({ message: "Bill assigned sucessfully" });
+
+  if (existingUsers.length === 0 && (!group || groupUsers.length === 0)) {
+    return res.json({ message: "Bill is not assigned to anyone!." });
+  }
+
+  return res.status(201).json({ message: "Bill assigned successfully" });
 };
 
-const usersBills = async (req, res,next) => {
-  if (req.userData.role === "user") return next(HttpError("You are unauthorized for this operation", 403));
+const usersBills = async (req, res, next) => {
+  if (req.userData.role === "user")
+    return next(HttpError("You are unauthorized for this operation", 403));
   try {
-    const bills = await Bill.find({},"bill_name bill_amount status createdAt")
-      .populate({path: "individual", select: "first_name last_name "})
+    const bills = await Bill.find({}, "bill_name bill_amount status createdAt")
+      .populate({ path: "individual", select: "first_name last_name " })
       .exec();
     return res.json(bills);
   } catch (err) {
     console.log(err);
-    return res.status(500).json({ message: "Something went wrong, Please try again" });
+    return res
+      .status(500)
+      .json({ message: "Something went wrong, Please try again" });
   }
 };
 
-const getBill = async (req, res,next) => {
-  if (req.userData.role === "user") return next(HttpError("You are unauthorized for this operation", 403));
+const getBill = async (req, res, next) => {
+  if (req.userData.role === "user")
+    return next(HttpError("You are unauthorized for this operation", 403));
   try {
-    const bill = await Bill.findById(req.params.id,"bill_name bill_amount status createdAt")
-      .populate({path: "individual",select: "first_name last_name "})
+    const bill = await Bill.findById(
+      req.params.id,
+      "bill_name bill_amount status createdAt"
+    )
+      .populate({ path: "individual", select: "first_name last_name " })
       .exec();
-    if (!bill) return res.status(404).json({ error: "Bill not found" })
+    if (!bill) return res.status(404).json({ error: "Bill not found" });
     return res.json(bill);
   } catch (err) {
     console.log(err);
-    return res.status(500).json({ message: "Something went wrong, Please try again" });
+    return res
+      .status(500)
+      .json({ message: "Something went wrong, Please try again" });
   }
 };
 
 const createdBills = async (req, res, next) => {
-  if (req.userData.role === "user") return next(HttpError("You are unauthorized for this operation", 403));
+  if (req.userData.role === "user")
+    return next(HttpError("You are unauthorized for this operation", 403));
   try {
     const billNames = await Bill.distinct("bill_name");
-    const bills = await Bill.find({ bill_name: { $in: billNames } }, "bill_name bill_amount createdAt")
+    const bills = await Bill.find(
+      { bill_name: { $in: billNames } },
+      "bill_name bill_amount createdAt"
+    )
       .sort({ createdAt: -1 }) // Sort by createdAt field in descending order
       .exec();
 
     return res.json(bills);
   } catch (err) {
     console.log(err);
-    return res.status(500).json({ message: "Something went wrong, Please try again" });
+    return res
+      .status(500)
+      .json({ message: "Something went wrong, Please try again" });
   }
 };
 
 const existingBills = async (req, res, next) => {
-  if (req.userData.role === "user") return next(HttpError("You are unauthorized for this operation", 403));
+  if (req.userData.role === "user")
+    return next(HttpError("You are unauthorized for this operation", 403));
   try {
-    const bill = await Bill.find({},"  bill_name bill_amount status createdAt")
-    .populate({path: "individual",select: "first_name last_name membership_id"})
+    const bill = await Bill.find({}, "  bill_name bill_amount status createdAt")
+      .populate({
+        path: "individual",
+        select: "first_name last_name membership_id",
+      })
       .exec();
     return res.json(bill);
   } catch (err) {
     console.log(err);
-    return res.status(500).json({ message: "Something went wrong, Please try again" });
+    return res
+      .status(500)
+      .json({ message: "Something went wrong, Please try again" });
   }
 };
 
 const getPaidBills = async (req, res, next) => {
-  if (req.userData.role === "user") return next(HttpError("You are unauthorized for this operation", 403));
+  if (req.userData.role === "user")
+    return next(HttpError("You are unauthorized for this operation", 403));
   try {
-    const bill = await Bill.find({ status: "paid" },"bill_name bill_amount status createdAt")
-    .populate({path: "individual",select: "first_name last_name membership_id"})
-    .exec();
-    return res.json(bill);
-  } catch (err) {
-    console.log(err);
-    return res.status(500).json({ message: "Something went wrong, Please try again" });
-  }
-};
-
-const getUnpaidBills = async (req, res, next) => {
-  if (req.userData.role === "user") return next(HttpError("You are unauthorized for this operation", 403));
-  try {
-    const bill = await Bill.find({ status: "unpaid" },"bill_name bill_amount status createdAt")
-    .populate({path: "individual",select: "first_name last_name membership_id"})
+    const bill = await Bill.find(
+      { status: "paid" },
+      "bill_name bill_amount status createdAt"
+    )
+      .populate({
+        path: "individual",
+        select: "first_name last_name membership_id",
+      })
       .exec();
     return res.json(bill);
   } catch (err) {
     console.log(err);
-    return res.status(500).json({ message: "Something went wrong, Please try again" });
+    return res
+      .status(500)
+      .json({ message: "Something went wrong, Please try again" });
+  }
+};
+
+const getUnpaidBills = async (req, res, next) => {
+  if (req.userData.role === "user")
+    return next(HttpError("You are unauthorized for this operation", 403));
+  try {
+    const bill = await Bill.find(
+      { status: "unpaid" },
+      "bill_name bill_amount status createdAt"
+    )
+      .populate({
+        path: "individual",
+        select: "first_name last_name membership_id",
+      })
+      .exec();
+    return res.json(bill);
+  } catch (err) {
+    console.log(err);
+    return res
+      .status(500)
+      .json({ message: "Something went wrong, Please try again" });
   }
 };
 
 const downloadPaymentReport = async (req, res, next) => {
   if (req.userData.role === "user")
     return next(HttpError("You are unauthorized for this operation", 403));
-    try {
-    const bill = await Bill.find({ status: "paid" },"bill_name bill_amount status createdAt")
-      .populate({path: "individual",select: "first_name last_name"});
+  try {
+    const bill = await Bill.find(
+      { status: "paid" },
+      "bill_name bill_amount status createdAt"
+    ).populate({ path: "individual", select: "first_name last_name" });
     let billArray = bill.map((b) => ({
       Bill_Name: b.bill_name,
       Bill_Amount: b.bill_amount,
@@ -234,17 +330,23 @@ const downloadPaymentReport = async (req, res, next) => {
       Date_Issued: b.createdAt,
     }));
     const headers = Object.keys(billArray[0]);
-    const csvData = csv.stringify([ headers,...billArray.map((item) => Object.values(item))]);
+    const csvData = csv.stringify([
+      headers,
+      ...billArray.map((item) => Object.values(item)),
+    ]);
     fs.writeFileSync("payment.csv", csvData);
     res.download("payment.csv");
   } catch (err) {
     console.log(err);
-    return res.status(500).json({ message: "Something went wrong, Please try again" });
+    return res
+      .status(500)
+      .json({ message: "Something went wrong, Please try again" });
   }
 };
 
-const createEvent = async (req, res,next) => {
-  if (req.userData.role === "user") return next(HttpError("You are unauthorized for this operation", 403));
+const createEvent = async (req, res, next) => {
+  if (req.userData.role === "user")
+    return next(HttpError("You are unauthorized for this operation", 403));
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     const message = errors.errors[0].msg;
@@ -253,7 +355,10 @@ const createEvent = async (req, res,next) => {
   const { name, members, venue, start_date, end_date, reminder } = req.body;
   const event = Event({
     name,
-    members: typeof members === 'string' ? members.toLowerCase() : members.map(member => member.toLowerCase()),
+    members:
+      typeof members === "string"
+        ? members.toLowerCase()
+        : members.map((member) => member.toLowerCase()),
     venue,
     start_date,
     end_date,
@@ -261,21 +366,26 @@ const createEvent = async (req, res,next) => {
   });
   try {
     await event.save();
-    return res.json(event); 
+    return res.json(event);
   } catch (err) {
     console.log(err);
-    return res.status(500).json({ message: "Something went wrong, Please try again" });
+    return res
+      .status(500)
+      .json({ message: "Something went wrong, Please try again" });
   }
 };
 
 const getEvents = async (req, res, next) => {
-  if (req.userData.role === "user") return next(HttpError("You are unauthorized for this operation", 403));
+  if (req.userData.role === "user")
+    return next(HttpError("You are unauthorized for this operation", 403));
   try {
-    const events = await Event.find({}.sort({ createdAt: -1 }));
+    const events = await Event.find({}).sort({ createdAt: -1 });
     return res.json(events);
   } catch (err) {
     console.log(err);
-    return res.status(500).json({ message: "Something went wrong, Please try again" });
+    return res
+      .status(500)
+      .json({ message: "Something went wrong, Please try again" });
   }
 };
 
@@ -293,5 +403,5 @@ module.exports = {
   downloadPaymentReport,
   createEvent,
   getEvents,
-  existingBills
+  existingBills,
 };

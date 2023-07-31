@@ -11,17 +11,17 @@ const upload = multer({ storage , fileFilter: function(req, file, callback) {
   callback(null, true);
 }})
 const router = express.Router();
-router.post("/set-poll", upload.array("images", 10), auth, [
+router.post("/set-poll", upload.any("items", 10), auth, [
   check("title").not().isEmpty().withMessage("Poll Title is required"),
-  check("category").not().isEmpty().withMessage("Poll Category is required"),
+  check("categoryName").not().isEmpty().withMessage("Poll Category Name is required"),
   check("startDate").not().isEmpty().withMessage("Start Date is required"),
   check("endDate").not().isEmpty().withMessage("End Date is required"),
   check("items").isArray({ min: 1 }).withMessage("At least one item is required"),
 ], voteController.setPoll); 
-router.put('/polls/:pollId/vote',auth, voteController.vote)
+router.put('/polls/:pollId/vote', auth, voteController.vote)
 router.get('/polls',auth, voteController.getPolls)
 router.get('/polls/:pollId',auth, voteController.getPoll)
-router.get('/polls/total-percentage/:pollId',auth, voteController.calculatePercentage)
+router.get('/polls/total-percentage/:categoryId',auth, voteController.calculatePercentage)
 
 
 exports.router = router;
