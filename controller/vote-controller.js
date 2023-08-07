@@ -5,6 +5,7 @@ const Category = require("../models/category");
 const cloudinary = require("cloudinary").v2;
 const { validationResult } = require("express-validator");
 const HttpError = require("../models/http-error");
+const { isValidObjectId } = require("mongoose");
 
 cloudinary.config({
   cloud_name: process.env.CLOUD_NAME,
@@ -135,13 +136,16 @@ const setPoll = async (req, res, next) => {
 const vote = async (req, res) => {
   try {
     const { pollId } = req.params;
+    // const isValid = mongoose.Types.ObjectId.isValid(id);
+    // if (!isValid) throw new Error("This id is not valid or not Found");
+    if(!isValidObjectId(pollId)) return res.status(404).json({ message: "Invalid Poll" });
 
     const { votesArray } = req.body;
     const user = await User.findById(req.userData.userId);
     if (!user) return res.status(404).json({ error: "User not found" });
     const poll = await Poll.findById(pollId);
     if (!poll) {
-      return res.status(404).json({ message: "Poll not found" });
+      return res.status(404).json({ message: "Poll not found" }); 
     }
     for (const voteItem of votesArray) {
       const { itemId, categoryId } = voteItem;
