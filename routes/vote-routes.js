@@ -20,6 +20,8 @@ router.post("/set-poll", upload.any("items", 10), auth, [
 ], voteController.setPoll); 
 router.put('/polls/:pollId/vote', auth, voteController.vote)
 router.get('/polls',auth, voteController.getPolls)
+router.get('/user-polls',auth, voteController.getUserPolls)
+router.put('/update-poll/:pollId',auth, voteController.updatePoll)
 router.get('/polls/:pollId',auth, voteController.getPoll)
 router.get('/polls/total-percentage/:categoryId',auth, voteController.calculatePercentage)
 
