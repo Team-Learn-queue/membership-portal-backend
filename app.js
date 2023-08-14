@@ -20,9 +20,8 @@ let url;
 if (environment === "development") {
   url = "http://localhost:3000/";
 } else {
-  url = "http://portal-anstesters.netlify.app/";
+  url = process.env.FRONTEND_URL;
 }
-
 app.use("/api/users", usersRoutes.router);
 app.use("/api/admin", adminRoutes.router);
 app.use("/api/discussion", discussionRoutes.router);
