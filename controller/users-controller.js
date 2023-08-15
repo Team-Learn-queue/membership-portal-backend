@@ -108,7 +108,7 @@ const signup = async (req, res) => {
     });
     await token.save();
 
-    const emailLink = `${url}/email-verification?email=${savedUser.email}&token=${randomBytes}`;
+    const emailLink = `${url}email-verification?email=${savedUser.email}&token=${randomBytes}`;
     await verifyEmailTemplate(savedUser, emailLink);
 
     return res.status(201).json({
