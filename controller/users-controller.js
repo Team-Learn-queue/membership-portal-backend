@@ -253,7 +253,7 @@ const resendLink = async (req, res) => {
   token
     .save()
     .then(() => {
-      const emailLink = `${url}/email-verification?email=${user.email}&token=${randomBytes}`;
+      const emailLink = `${url}email-verification?email=${user.email}&token=${randomBytes}`;
       const mailOptions = verifyEmailTemplate(user, emailLink);
       transporter.sendMail(mailOptions, (error, info) => {
         if (error) {
@@ -294,7 +294,7 @@ const forgotPassword = async (req, res) => {
     const resetToken = new ResetToken({ userId: user.id, token });
     await resetToken.save();
 
-    const resetLink = `${url}/reset-password?userId=${user.id}&token=${token}`;
+    const resetLink = `${url}reset-password?userId=${user.id}&token=${token}`;
     await forgotEmailTemplate(user, resetLink);
 
     return res.status(201).json({
