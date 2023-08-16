@@ -232,15 +232,21 @@ const createdBills = async (req, res, next) => {
   if (req.userData.role === "user")
     return next(HttpError("You are unauthorized for this operation", 403));
   try {
-    const billNames = await Bill.distinct("bill_name");
-    const bills = await Bill.find(
-      { bill_name: { $in: billNames } },
-      "bill_name bill_amount createdAt"
-    )
-      .sort({ createdAt: -1 }) // Sort by createdAt field in descending order
-      .exec();
+    const aggregatedBills = await Bill.aggregate([
+      {
+        $group: {
+          _id: "$bill_name",
+          bill_name: { $first: "$bill_name" },
+          bill_amount: { $first: "$bill_amount" },
+          createdAt: { $first: "$createdAt" }
+        }
+      },
+      {
+        $sort: { createdAt: -1 }
+      }
+    ]);
 
-    return res.json(bills);
+    return res.json(aggregatedBills);
   } catch (err) {
     console.log(err);
     return res
