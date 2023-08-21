@@ -51,7 +51,7 @@ mongoose
   .then(() => {
     const server = app.listen(process.env.PORT || 8000);
     const io = require("./socket").init(server, {
-      cors: {
+      cors: { 
         origin: url,
         allowedHeaders: ["my-custom-header"],
         credentials: true,

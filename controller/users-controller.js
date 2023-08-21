@@ -671,7 +671,6 @@ const pay = async (req, res) => {
 };
 
 const webhook = async (req, res) => {
-  console.log(req.body);
   const secret = process.env.PAYSTACK_SECRET_KEY;
   const hash = req.headers["x-paystack-signature"];
   // Verify request signature
