@@ -104,7 +104,10 @@ const vote = async (req, res) => {
     const currentDate = moment().utc();
     const pollStartDate = moment(poll.startDate).utc();
     const pollEndDate = moment(poll.endDate).utc();
-     
+     console.log(currentDate)
+     console.log(pollStartDate)
+     console.log(pollEndDate)
+
     if (currentDate.isBefore(pollStartDate))
       return res.status(400).json({ message: "Voting has not started" });
 
