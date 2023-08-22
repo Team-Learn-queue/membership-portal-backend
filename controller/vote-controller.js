@@ -99,12 +99,12 @@ const vote = async (req, res) => {
       return res.status(404).json({ message: "Poll not found" });
     }
     const currentDate = new Date();
-    if (currentDate < poll.startDate) {
+    if (currentDate <  new Date(poll.startDate)) {
       return res.status(400).json({
         message: "Voting has not started",
       });
     }
-    if (currentDate > poll.endDate) {
+    if (currentDate > new Date(poll.endDate) ) {
       return res.status(400).json({
         message: "Voting has ended",
       });
