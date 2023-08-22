@@ -6,6 +6,7 @@ const cloudinary = require("cloudinary").v2;
 const { validationResult } = require("express-validator");
 const HttpError = require("../models/http-error");
 const { isValidObjectId } = require("mongoose");
+const moment = require('moment');
 
 cloudinary.config({
   cloud_name: process.env.CLOUD_NAME,
@@ -22,9 +23,11 @@ const setPoll = async (req, res, next) => {
   }
   try {
     const { title, startDate, endDate, categoryName, items } = req.body;
+    const startDateUTC = moment(startDate).utc().format();
+    const endDateUTC = moment(endDate).utc().format();
     let poll = await Poll.findOne({ title });
     if (!poll) {
-      poll = await Poll.create({ title, startDate, endDate });
+      poll = await Poll.create({ title, startDate: startDateUTC, endDate: endDateUTC });
     }
     const categoryExists = await Category.findOne({
       _id: { $in: poll.categories },
@@ -98,21 +101,15 @@ const vote = async (req, res) => {
     if (!poll) {
       return res.status(404).json({ message: "Poll not found" });
     }
-    const currentDateUTC = new Date().toISOString();
-    const pollStartDateUTC = new Date(poll.startDate).toISOString();
-    const pollEndDateUTC = new Date(poll.endDate).toISOString();
-    console.log(currentDateUTC < new Date(pollStartDateUTC)); 
-     console.log(currentDateUTC > new Date(pollEndDateUTC)); 
-    if (currentDateUTC < pollStartDateUTC) {
-      return res.status(400).json({
-        message: "Voting has not started",
-      });
-    }
-    if (currentDateUTC > pollEndDateUTC) {
-      return res.status(400).json({
-        message: "Voting has ended",
-      });
-    }
+    const currentDate = moment().utc();
+    const pollStartDate = moment(poll.startDate).utc();
+    const pollEndDate = moment(poll.endDate).utc();
+     
+    if (currentDate.isBefore(pollStartDate))
+      return res.status(400).json({ message: "Voting has not started" });
+
+    if (currentDate.isAfter(pollEndDate))
+      return res.status(400).json({ message: "Voting has ended" });    
     for (const voteItem of votesArray) {
       const { itemId, categoryId } = voteItem;
       if (poll.votedBy.includes(user._id)) {
