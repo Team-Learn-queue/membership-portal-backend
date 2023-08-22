@@ -98,14 +98,17 @@ const vote = async (req, res) => {
     if (!poll) {
       return res.status(404).json({ message: "Poll not found" });
     }
-    const currentDate = new Date();
-    console.log(currentDate <  new Date(poll.startDate))
-    if (currentDate <  new Date(poll.startDate)) {
+    const currentDateUTC = new Date().toISOString();
+    const pollStartDateUTC = new Date(poll.startDate).toISOString();
+    const pollEndDateUTC = new Date(poll.endDate).toISOString();
+    console.log(currentDateUTC < new Date(pollStartDateUTC)); 
+     console.log(currentDateUTC > new Date(pollEndDateUTC)); 
+    if (currentDateUTC < pollStartDateUTC) {
       return res.status(400).json({
         message: "Voting has not started",
       });
     }
-    if (currentDate > new Date(poll.endDate) ) {
+    if (currentDateUTC > pollEndDateUTC) {
       return res.status(400).json({
         message: "Voting has ended",
       });
