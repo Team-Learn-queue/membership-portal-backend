@@ -101,7 +101,7 @@ const vote = async (req, res) => {
     if (!poll) {
       return res.status(404).json({ message: "Poll not found" });
     }
-    const currentDate = moment().utc();
+    const currentDate = moment().add(1, 'hour').utc();
     const pollStartDate = moment(poll.startDate).utc();
     const pollEndDate = moment(poll.endDate).utc();
      console.log(currentDate)
